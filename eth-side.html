@@ -17,23 +17,46 @@ console.log(publicAddress);
 // From https://github.com/terra-money/shuttle/blob/main/TERRA_ASSET.md#erc20-contracts
 const UST_CONTRACT = {
   ropsten: '0x6cA13a4ab78dd7D657226b155873A04DB929A3A4',
+  mainnet: '0xa47c8bf37f92aBed4A126BDA807A7b7498661acD',
 };
 const ETH_TARGET_NETWORK = 'ropsten';
 
 // Look for transfers to the target address
-// Since it's bridged, this is minted.
+// Since it's bridged, this is minted (i.e. fromAddress=0x0).
 const filter = {
     address: UST_CONTRACT[ETH_TARGET_NETWORK],
     topics: [
         utils.id("Transfer(address,address,uint256)"),
-        utils.hexZeroPad('0x0', 32),
+        utils.hexZeroPad('0x0', 32 /* length of these fields */),
         utils.hexZeroPad(publicAddress, 32)
     ]
 }
 provider.once(filter, (log, event) => {
     const {data} = log;
     const amountMinted = utils.formatEther(data);
+    const amountMintedBN = BigNumber.from(data);
     console.log(amountMinted);
 });
+
+// https://etherscan.io/token/0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48
+const USDC_CONTRACT = '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48';
+
+function main() {
+  const fromTokenAddress = UST_CONTRACT.mainnet;
+  const toTokenAddress = USDC_CONTRACT;
+  const amount = utils.parseEther('9.0');
+  // TODO: Add referrerAddress is pretty cool, incentivizes the right behaviors, along with fee
+  // const url = `https://api.1inch.exchange/v3.0/1/quote?fromTokenAddress=${fromTokenAddress}&toTokenAddress=${toTokenAddress}&amount=${amount}`;
+
+  const fromAddress = publicAddress;
+  const slippage = 0.5;
+  const url = `https://api.1inch.exchange/v3.0/1/swap?fromTokenAddress=${fromTokenAddress}&toTokenAddress=${toTokenAddress}&amount=${amount}&fromAddress=${fromAddress}&slippage=${slippage}&disableEstimate=true`;
+  fetch(url).then(r => r.json()).then(data => {
+    console.log(data);
+
+  });
+}
+
+main();
 
 </script>
