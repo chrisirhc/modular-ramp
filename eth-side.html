@@ -1,5 +1,5 @@
 <script type="module">
-import { ethers } from "./node_modules/ethers/dist/ethers.esm.min.js";
+import { ethers, utils } from "./node_modules/ethers/dist/ethers.esm.min.js";
   
 // A Web3Provider wraps a standard Web3 provider, which is
 // what Metamask injects as window.ethereum into each page
@@ -11,8 +11,27 @@ await provider.send("eth_requestAccounts", []);
 // For this, you need the account signer...
 const signer = provider.getSigner();
 
-console.log(await provider.getBlockNumber());
+const publicAddress = await signer.getAddress();
+console.log(publicAddress);
 
+// From https://github.com/terra-money/shuttle/blob/main/TERRA_ASSET.md#erc20-contracts
+const UST_CONTRACT = {
+  ropsten: '0x6cA13a4ab78dd7D657226b155873A04DB929A3A4',
+};
+const ETH_TARGET_NETWORK = 'ropsten';
 
+// Look for transfers to the target address
+// Since it's bridged, this is minted.
+const filter = {
+    address: UST_CONTRACT[ETH_TARGET_NETWORK],
+    topics: [
+        utils.id("Transfer(address,address,uint256)"),
+        utils.hexZeroPad('0x0', 32),
+        utils.hexZeroPad(publicAddress, 32)
+    ]
+}
+provider.once(filter, (log, event) => {
+    console.log(argument);
+})
 
 </script>
