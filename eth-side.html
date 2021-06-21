@@ -50,10 +50,23 @@ function main() {
 
   const fromAddress = publicAddress;
   const slippage = 0.5;
-  const url = `https://api.1inch.exchange/v3.0/1/swap?fromTokenAddress=${fromTokenAddress}&toTokenAddress=${toTokenAddress}&amount=${amount}&fromAddress=${fromAddress}&slippage=${slippage}&disableEstimate=true`;
+  // TODO: Check back later
+  const disableEstimate = true; // remove later
+  const url = `https://api.1inch.exchange/v3.0/1/swap?fromTokenAddress=${fromTokenAddress}&toTokenAddress=${toTokenAddress}&amount=${amount}&fromAddress=${fromAddress}&slippage=${slippage}${disableEstimate ? '&disableEstimate=true' : ''}`;
   fetch(url).then(r => r.json()).then(data => {
     console.log(data);
 
+    /* Not yet tested */
+    const {tx} = data;
+    // Ethers will fill these
+    delete tx.gas;
+    delete tx.gasPrice;
+
+    // Make value into hex per https://docs.1inch.io/api/nodejs-web3-example
+    let value = parseInt(tx["value"]);			//get the value from the transaction
+    value = '0x' + value.toString(16);				//add a leading 0x after converting from decimal to hexadecimal
+    tx["value"] = value;
+    signer.sendTransaction(tx);
   });
 }
 
