@@ -30,24 +30,38 @@ const msg = new MsgSend(
     new Coin('uusd', new Int(10).mul(TERRA_DECIMAL))
   ])
 );
-const tx = await wallet.createAndSignTx({
+
+// Fee calculation is a PITA
+// See https://github.com/terra-money/bridge-web-app/blob/060979b7966d66368d54819a7c83f68949e71014/src/hooks/useSend.ts#L139-L197
+const estTx = await wallet.createTx({
   msgs: [msg],
   memo: ETH_DEST_ADDRESS,
-  gasPrices: { uusd: 0.15 },
-  // Fee calculation is a PITA
-})
+  gasPrices: {uusd: 0.15},
+});
+const estimatedFee = await terra.tx.estimateFee(estTx);
+console.log('estimated fee gas', estimatedFee.gas);
 
 // Fee calculation is a PITA
 const taxAmount = await terra.utils.calculateTax(new Coin('uusd', new Int(10).mul(TERRA_DECIMAL)));
-const ASSUMED_GAS_LIMIT = 20_000;
 // From https://tequila-fcd.terra.dev/v1/txs/gas_prices
 const gasPrice = 0.15; // in uusd
-const gasFeeForGasLimit = 0.15 * ASSUMED_GAS_LIMIT; // in uusd
-const gasFeeNoTax = new StdFee(ASSUMED_GAS_LIMIT, new Coins({uusd: gasFeeForGasLimit}));
+const gasFeeForGasLimit = Math.ceil(0.15 * estimatedFee.gas); // in uusd
+const gasFeeNoTax = new StdFee(estimatedFee.gas, new Coins({uusd: gasFeeForGasLimit}));
 const fullFee = new StdFee(gasFeeNoTax.gas, gasFeeNoTax.amount.add(taxAmount));
 console.log('fullFee', fullFee.amount, 'gasFeeNoTax', gasFeeNoTax.amount);
 
-console.log(tx.fee.gas);
-// const txResult = await terra.tx.broadcast(tx);
+// Grab the amount of gas estimated here
+console.log(estimatedFee.gas);
 
-// console.log(txResult);
+const tx = await wallet.createAndSignTx({
+  msgs: [msg],
+  memo: ETH_DEST_ADDRESS,
+  gasPrices: {uusd: 0.15},
+  fee: fullFee
+});
+
+console.log('estimated fee gas 2', tx.fee.gas)
+
+const txResult = await terra.tx.broadcast(tx);
+
+console.log(txResult);
