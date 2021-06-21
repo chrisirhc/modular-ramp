@@ -1,6 +1,11 @@
+import React from "react";
 import { ethers, utils, BigNumber } from "ethers";
 
-document.querySelector('#go').addEventListener('click', main);
+export function EthSideComponent() {
+  return (
+    <button onClick={main}>Go</button>
+  )
+}
 
 async function main() {
   // A Web3Provider wraps a standard Web3 provider, which is
