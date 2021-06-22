@@ -15,6 +15,7 @@ const signer = provider.getSigner();
 export function EthSideComponent() {
   const [publicAddress, setPublicAddress] = useState(null);
   const [convertStatus, setConvertStatus] = useState(null);
+  const [amountMinted, setAmountMinted] = useState(null);
 
   return (
     <>
@@ -23,8 +24,20 @@ export function EthSideComponent() {
           {publicAddress ? `Connected to ${publicAddress}` : 'Connect'}
         </button>
       </div>
+      {
+        publicAddress ?
+        (
+          <div>
+            {
+              amountMinted ?
+              `Amount minted ${amountMinted}` :
+              'Waiting for transaction...'
+            }
+          </div>
+        ) : null
+      }
       <button onClick={() => go()} disabled={Boolean(convertStatus)}>
-        {convertStatus || 'Convert to USDC'}
+        {convertStatus || `Convert ${amountMinted} UST to USDC`}
       </button>
     </>
   );
@@ -48,7 +61,7 @@ export function EthSideComponent() {
         const {data} = log;
         const amountMinted = utils.formatEther(data);
         const amountMintedBN = BigNumber.from(data);
-        console.log(amountMinted);
+        setAmountMinted(amountMinted);
     });
   }
 
@@ -60,7 +73,7 @@ export function EthSideComponent() {
 
     const fromTokenAddress = UST_CONTRACT.mainnet;
     const toTokenAddress = USDC_CONTRACT;
-    const amount = utils.parseEther('9.0');
+    const amount = utils.parseEther(amountMinted ?? '9.0');
     // TODO: Add referrerAddress is pretty cool, incentivizes the right behaviors, along with fee
     // const url = `https://api.1inch.exchange/v3.0/1/quote?fromTokenAddress=${fromTokenAddress}&toTokenAddress=${toTokenAddress}&amount=${amount}`;
 
