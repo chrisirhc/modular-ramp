@@ -1,20 +1,30 @@
 import React, { useState } from "react";
-import { Extension, Wallet } from "@terra-money/terra.js";
+import { Extension } from "@terra-money/terra.js";
+
+type ConnectResponse = {
+  address: string
+};
 
 export function TerraToShuttle() {
-  const [wallet, setWallet] = useState<Wallet | null>(null);
+  const [wallet, setWallet] = useState<ConnectResponse | null>(null);
 
   return (
     <div>
       <h3>Terra To Shuttle</h3>
-      <button onClick={connect}>Connect to Terra Station</button>
+      <button onClick={connect}>
+        {
+          wallet ?
+          `Connected to ${wallet.address}` :
+          'Connect to Terra Station'
+        }
+      </button>
     </div>
   );
 
   function connect() {
     const extension = new Extension();
     extension.connect();
-    extension.on("connect", (w: Wallet) => {
+    extension.on('onConnect', (w: ConnectResponse) => {
       setWallet(w);
     });
   }
