@@ -1,54 +1,63 @@
-import React from "react";
+import React, { useState } from "react";
 import { ethers, utils, BigNumber } from "ethers";
 
+// From https://github.com/terra-money/shuttle/blob/main/TERRA_ASSET.md#erc20-contracts
+const UST_CONTRACT = {
+  ropsten: '0x6cA13a4ab78dd7D657226b155873A04DB929A3A4',
+  mainnet: '0xa47c8bf37f92aBed4A126BDA807A7b7498661acD',
+};
+const ETH_TARGET_NETWORK = 'ropsten';
+
+// Only works with Metamask right now.
+const provider = new ethers.providers.Web3Provider(window.ethereum);
+const signer = provider.getSigner();
+
 export function EthSideComponent() {
+  const [publicAddress, setPublicAddress] = useState(null);
+  const [convertStatus, setConvertStatus] = useState(null);
+
   return (
-    <button onClick={main}>Go</button>
-  )
-}
+    <>
+      <div>
+        <button onClick={connect} disabled={Boolean(publicAddress)}>
+          {publicAddress ? `Connected to ${publicAddress}` : 'Connect'}
+        </button>
+      </div>
+      <button onClick={() => go()} disabled={Boolean(convertStatus)}>
+        {convertStatus || 'Convert to USDC'}
+      </button>
+    </>
+  );
 
-async function main() {
-  // A Web3Provider wraps a standard Web3 provider, which is
-  // what Metamask injects as window.ethereum into each page
-  const provider = new ethers.providers.Web3Provider(window.ethereum);
-  await provider.send("eth_requestAccounts", []);
+  async function connect() {
+    await provider.send("eth_requestAccounts", []);
+    const publicAddress = await signer.getAddress();
+    setPublicAddress(publicAddress);
 
-  // The Metamask plugin also allows signing transactions to
-  // send ether and pay to change state within the blockchain.
-  // For this, you need the account signer...
-  const signer = provider.getSigner();
-
-  const publicAddress = await signer.getAddress();
-  console.log(publicAddress);
-
-  // From https://github.com/terra-money/shuttle/blob/main/TERRA_ASSET.md#erc20-contracts
-  const UST_CONTRACT = {
-    ropsten: '0x6cA13a4ab78dd7D657226b155873A04DB929A3A4',
-    mainnet: '0xa47c8bf37f92aBed4A126BDA807A7b7498661acD',
-  };
-  const ETH_TARGET_NETWORK = 'ropsten';
-
-  // Look for transfers to the target address
-  // Since it's bridged, this is minted (i.e. fromAddress=0x0).
-  const filter = {
-      address: UST_CONTRACT[ETH_TARGET_NETWORK],
-      topics: [
-          utils.id("Transfer(address,address,uint256)"),
-          utils.hexZeroPad('0x0', 32 /* length of these fields */),
-          utils.hexZeroPad(publicAddress, 32)
-      ]
+    // Look for transfers to the target address
+    // Since it's bridged, this is minted (i.e. fromAddress=0x0).
+    const filter = {
+        address: UST_CONTRACT[ETH_TARGET_NETWORK],
+        topics: [
+            utils.id("Transfer(address,address,uint256)"),
+            utils.hexZeroPad('0x0', 32 /* length of these fields */),
+            utils.hexZeroPad(publicAddress, 32)
+        ]
+    }
+    provider.once(filter, (log, event) => {
+        const {data} = log;
+        const amountMinted = utils.formatEther(data);
+        const amountMintedBN = BigNumber.from(data);
+        console.log(amountMinted);
+    });
   }
-  provider.once(filter, (log, event) => {
-      const {data} = log;
-      const amountMinted = utils.formatEther(data);
-      const amountMintedBN = BigNumber.from(data);
-      console.log(amountMinted);
-  });
 
-  // https://etherscan.io/token/0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48
-  const USDC_CONTRACT = '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48';
+  function go() {
+    setConvertStatus('Fetching from 1inch...');
 
-  function main2() {
+    // https://etherscan.io/token/0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48
+    const USDC_CONTRACT = '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48';
+
     const fromTokenAddress = UST_CONTRACT.mainnet;
     const toTokenAddress = USDC_CONTRACT;
     const amount = utils.parseEther('9.0');
@@ -60,7 +69,8 @@ async function main() {
     // TODO: Check back later
     const disableEstimate = true; // remove later
     const url = `https://api.1inch.exchange/v3.0/1/swap?fromTokenAddress=${fromTokenAddress}&toTokenAddress=${toTokenAddress}&amount=${amount}&fromAddress=${fromAddress}&slippage=${slippage}${disableEstimate ? '&disableEstimate=true' : ''}`;
-    fetch(url).then(r => r.json()).then(data => {
+    fetch(url).then(r => r.json())
+    .then(data => {
       console.log(data);
 
       /* Not yet tested */
@@ -73,9 +83,12 @@ async function main() {
       let value = parseInt(tx["value"]);			//get the value from the transaction
       value = '0x' + value.toString(16);				//add a leading 0x after converting from decimal to hexadecimal
       tx["value"] = value;
-      signer.sendTransaction(tx);
+      return signer.sendTransaction(tx);
+    })
+    .then(() => {
+      setConvertStatus('Transaction Sent!');
+    }, () => {
+      setConvertStatus('Transaction Failed.');
     });
   }
-
-  main2();
 }
