@@ -25,7 +25,8 @@ export function EthSideComponent() {
   const [amountMinted, setAmountMinted] = useState<string | null>(null);
 
   return (
-    <>
+    <div>
+      <h3>Etherum Conversion to USDC</h3>
       <div>
         <button onClick={connect} disabled={Boolean(publicAddress)}>
           {publicAddress ? `Connected to ${publicAddress}` : 'Connect'}
@@ -46,7 +47,7 @@ export function EthSideComponent() {
       <button onClick={() => go()} disabled={Boolean(convertStatus)}>
         {convertStatus || `Convert ${amountMinted} UST to USDC`}
       </button>
-    </>
+    </div>
   );
 
   async function connect() {
