@@ -1,6 +1,13 @@
 import React, { useState } from "react";
 import { ethers, utils, BigNumber } from "ethers";
 
+// Assume this is injected by Metamask
+declare global {
+  interface Window {
+      ethereum: any;
+  }
+}
+
 // From https://github.com/terra-money/shuttle/blob/main/TERRA_ASSET.md#erc20-contracts
 const UST_CONTRACT = {
   ropsten: '0x6cA13a4ab78dd7D657226b155873A04DB929A3A4',
@@ -13,9 +20,9 @@ const provider = new ethers.providers.Web3Provider(window.ethereum);
 const signer = provider.getSigner();
 
 export function EthSideComponent() {
-  const [publicAddress, setPublicAddress] = useState(null);
-  const [convertStatus, setConvertStatus] = useState(null);
-  const [amountMinted, setAmountMinted] = useState(null);
+  const [publicAddress, setPublicAddress] = useState<string | null>(null);
+  const [convertStatus, setConvertStatus] = useState<string | null>(null);
+  const [amountMinted, setAmountMinted] = useState<string | null>(null);
 
   return (
     <>
@@ -93,9 +100,9 @@ export function EthSideComponent() {
       delete tx.gasPrice;
 
       // Make value into hex per https://docs.1inch.io/api/nodejs-web3-example
-      let value = parseInt(tx["value"]);			//get the value from the transaction
-      value = '0x' + value.toString(16);				//add a leading 0x after converting from decimal to hexadecimal
-      tx["value"] = value;
+      const valueInt = parseInt(tx["value"]);			//get the value from the transaction
+      const valueStr = '0x' + valueInt.toString(16);				//add a leading 0x after converting from decimal to hexadecimal
+      tx["value"] = valueStr;
       return signer.sendTransaction(tx);
     })
     .then(() => {
