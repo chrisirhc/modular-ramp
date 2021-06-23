@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { LCDClient, Extension, Coin, Coins, Dec, MsgSend, StdFee } from "@terra-money/terra.js";
+import { LCDClient, Extension, Coin, Coins, Dec, MsgSend, StdFee, CreateTxOptions } from "@terra-money/terra.js";
 
 type ConnectResponse = {
   address: string
@@ -28,9 +28,10 @@ function printTerraAmount(coin: Coin | null | undefined) {
 }
 
 export function TerraToShuttle() {
+  const [extension, setExtension] = useState<Extension | null>(null);
   const [wallet, setWallet] = useState<ConnectResponse | null>(null);
   const [balance, setBalance] = useState<Coins | null>(null);
-  const [estFees, setEstFees] = useState<Coins | null>(null);
+  const [estTx, setEstTx] = useState<EstTx | null>(null);
   const amountToConvertInputEl = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -76,11 +77,12 @@ export function TerraToShuttle() {
           }
           toShuttle(value);
         }}>
-          Convert!
+          Estimate
         </button>
         <div>
-          <pre>{ printTerraAmount(estFees && estFees.get('uusd')) } UST</pre>
+          <pre>{ printTerraAmount(estTx?.estFees?.amount?.get('uusd')) } UST</pre>
         </div>
+        <EstTxToShuttle estTx={estTx} extension={extension} />
       </div>
     </div>
   );
@@ -91,6 +93,7 @@ export function TerraToShuttle() {
     extension.on('onConnect', (w: ConnectResponse) => {
       setWallet(w);
     });
+    setExtension(extension);
   }
 
   async function getBalance() {
@@ -117,13 +120,14 @@ export function TerraToShuttle() {
       ])
     );
 
-    // Fee calculation is a PITA
-    // See https://github.com/terra-money/bridge-web-app/blob/060979b7966d66368d54819a7c83f68949e71014/src/hooks/useSend.ts#L139-L197
-    const estTx = await terra.tx.create(wallet.address, {
+    const estTxOptions: CreateTxOptions = {
       msgs: [msg],
       memo: ETH_DEST_ADDRESS,
       gasPrices: {uusd: 0.15},
-    });
+    };
+    // Fee calculation is a PITA
+    // See https://github.com/terra-money/bridge-web-app/blob/060979b7966d66368d54819a7c83f68949e71014/src/hooks/useSend.ts#L139-L197
+    const estTx = await terra.tx.create(wallet.address, estTxOptions);
     const estimatedFee = await terra.tx.estimateFee(estTx);
     console.log('estimated gas needed', estimatedFee.gas);
 
@@ -138,21 +142,53 @@ export function TerraToShuttle() {
       'fullFee', fullFee.amount.toString(),
       'gasFeeNoTax', gasFeeNoTax.amount.toString()
     );
-    setEstFees(fullFee.amount);
-
-    /*
-    const tx = await wallet.createAndSignTx({
-      msgs: [msg],
-      memo: ETH_DEST_ADDRESS,
-      gasPrices: {uusd: 0.15},
-      fee: fullFee
+    setEstTx({
+      amount: amountToConvert,
+      estTx: estTxOptions,
+      estFees: fullFee,
     });
+  }
+}
 
-    console.log('estimated fee gas 2', tx.fee.gas)
+type EstTx = {
+  amount: Coin,
+  estTx: CreateTxOptions,
+  estFees: StdFee,
+};
 
-    const txResult = await terra.tx.broadcast(tx);
+function EstTxToShuttle({estTx, extension}: {estTx: EstTx | null, extension: Extension | null}) {
+  if (!estTx) {
+    return null;
+  }
+  
+  const uusdFees = estTx.estFees?.amount.get('uusd');
+  if (!uusdFees) {
+    return null;
+  }
 
-    console.log(txResult);
-    */
+  return (
+    <div>
+      <pre>
+{`Amount: ${ printTerraAmount(estTx.amount) }
+Fees: ${ printTerraAmount(estTx.estFees?.amount.get('uusd')) }
+Estimated amount to expect in Ethereum: ${ printTerraAmount(estTx.amount.sub(uusdFees.amount)) }`}
+      </pre>
+      <button onClick={convert}>Convert!</button>
+    </div>
+  );
+
+  function convert() {
+    if (!estTx || !extension) {
+      return;
+    }
+
+    extension.post({
+      ...estTx.estTx,
+      fee: estTx.estFees,
+    });
+    extension.once('onPost', payload => {
+      console.log(payload);
+
+    });
   }
 }
