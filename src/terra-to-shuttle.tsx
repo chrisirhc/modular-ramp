@@ -20,9 +20,17 @@ const terra = new LCDClient({
   chainID: 'tequila-0004',
 });
 
+function printTerraAmount(coin: Coin | null | undefined) {
+  if (!coin) {
+    return '';
+  }
+  return new Dec(coin.amount).div(TERRA_DECIMAL).toString();
+}
+
 export function TerraToShuttle() {
   const [wallet, setWallet] = useState<ConnectResponse | null>(null);
   const [balance, setBalance] = useState<Coins | null>(null);
+  const [estFees, setEstFees] = useState<Coins | null>(null);
   const amountToConvertInputEl = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -45,7 +53,7 @@ export function TerraToShuttle() {
         balance && balance.get("uusd") ? (
           <div>
             UUSD balance
-            <pre>{ uusdBal && new Dec(uusdBal.amount).div(TERRA_DECIMAL).toString() }</pre>
+            <pre>{ printTerraAmount(uusdBal) } UST</pre>
           </div>
         ) : null
       }
@@ -70,6 +78,9 @@ export function TerraToShuttle() {
         }}>
           Convert!
         </button>
+        <div>
+          <pre>{ printTerraAmount(estFees && estFees.get('uusd')) } UST</pre>
+        </div>
       </div>
     </div>
   );
@@ -114,7 +125,7 @@ export function TerraToShuttle() {
       gasPrices: {uusd: 0.15},
     });
     const estimatedFee = await terra.tx.estimateFee(estTx);
-    console.log('estimated fee gas', estimatedFee.gas);
+    console.log('estimated gas needed', estimatedFee.gas);
 
     // Fee calculation is a PITA
     const taxAmount = await terra.utils.calculateTax(amountToConvert);
@@ -123,10 +134,11 @@ export function TerraToShuttle() {
     const gasFeeForGasLimit = Math.ceil(0.15 * estimatedFee.gas); // in uusd
     const gasFeeNoTax = new StdFee(estimatedFee.gas, new Coins({uusd: gasFeeForGasLimit}));
     const fullFee = new StdFee(gasFeeNoTax.gas, gasFeeNoTax.amount.add(taxAmount));
-    console.log('fullFee', fullFee.amount, 'gasFeeNoTax', gasFeeNoTax.amount);
-
-    // Grab the amount of gas estimated here
-    console.log(estimatedFee.gas);  
+    console.log(
+      'fullFee', fullFee.amount.toString(),
+      'gasFeeNoTax', gasFeeNoTax.amount.toString()
+    );
+    setEstFees(fullFee.amount);
 
     /*
     const tx = await wallet.createAndSignTx({
