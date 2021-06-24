@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { LCDClient, Extension, Coin, Coins, Dec, MsgSend, StdFee, CreateTxOptions } from "@terra-money/terra.js";
+import { LCDClient, Extension, Coin, Coins, Dec, MsgSend, StdFee, CreateTxOptions, Int } from "@terra-money/terra.js";
 
 type ConnectResponse = {
   address: string
@@ -13,6 +13,8 @@ const ETH_DEST_ADDRESS = '0x88fc7C092aFF64bf5319e9F1Ab2D9DDC5f854449';
 const SHUTTLE_TO_TERRA_ADDRESS = {
   ropsten: 'terra10a29fyas9768pw8mewdrar3kzr07jz8f3n73t3',
 };
+
+const MIN_FEE = new Coin('uusd', new Int(1 * TERRA_DECIMAL));
 
 // connect to soju testnet
 const terra = new LCDClient({
@@ -120,10 +122,11 @@ export function TerraToShuttle() {
       ])
     );
 
+    const gasPriceInUusd = 0.15; // in uusd. TODO: This can change and should be retrieved from lcd.
     const estTxOptions: CreateTxOptions = {
       msgs: [msg],
       memo: ETH_DEST_ADDRESS,
-      gasPrices: {uusd: 0.15},
+      gasPrices: {uusd: gasPriceInUusd},
     };
     // Fee calculation is a PITA
     // See https://github.com/terra-money/bridge-web-app/blob/060979b7966d66368d54819a7c83f68949e71014/src/hooks/useSend.ts#L139-L197
@@ -131,16 +134,18 @@ export function TerraToShuttle() {
     const estimatedFee = await terra.tx.estimateFee(estTx);
     console.log('estimated gas needed', estimatedFee.gas);
 
-    // Fee calculation is a PITA
+    // Fee calculation is a PITA. Assume everything here is being calculated in uusd
     const taxAmount = await terra.utils.calculateTax(amountToConvert);
     // From https://tequila-fcd.terra.dev/v1/txs/gas_prices
-    const gasPrice = 0.15; // in uusd
-    const gasFeeForGasLimit = Math.ceil(0.15 * estimatedFee.gas); // in uusd
-    const gasFeeNoTax = new StdFee(estimatedFee.gas, new Coins({uusd: gasFeeForGasLimit}));
-    const fullFee = new StdFee(gasFeeNoTax.gas, gasFeeNoTax.amount.add(taxAmount));
+    const gasFeeForGasLimit = new Int(gasPriceInUusd).mul(estimatedFee.gas); // in uusd
+
+    const estFeeBeforeMin = taxAmount.add(gasFeeForGasLimit);
+    const estFee = estFeeBeforeMin.amount.lessThan(MIN_FEE.amount) ? MIN_FEE : estFeeBeforeMin;
+    // Need to apply min fee
+    const fullFee = new StdFee(estimatedFee.gas, [estFee]);
     console.log(
       'fullFee', fullFee.amount.toString(),
-      'gasFeeNoTax', gasFeeNoTax.amount.toString()
+      'gasFeeNoTax', gasFeeForGasLimit.toString()
     );
     setEstTx({
       amount: amountToConvert,
@@ -157,6 +162,8 @@ type EstTx = {
 };
 
 function EstTxToShuttle({estTx, extension}: {estTx: EstTx | null, extension: Extension | null}) {
+  const [convertStatus, setConvertStatus] = useState<string | null>(null);
+
   if (!estTx) {
     return null;
   }
@@ -173,7 +180,9 @@ function EstTxToShuttle({estTx, extension}: {estTx: EstTx | null, extension: Ext
 Fees: ${ printTerraAmount(estTx.estFees?.amount.get('uusd')) }
 Estimated amount to expect in Ethereum: ${ printTerraAmount(estTx.amount.sub(uusdFees.amount)) }`}
       </pre>
-      <button onClick={convert}>Convert!</button>
+      <button onClick={convert} disabled={Boolean(convertStatus)}>
+        { convertStatus ? convertStatus : 'Convert!' }
+      </button>
     </div>
   );
 
@@ -188,7 +197,9 @@ Estimated amount to expect in Ethereum: ${ printTerraAmount(estTx.amount.sub(uus
     });
     extension.once('onPost', payload => {
       console.log(payload);
-
+      // TODO: Check as to why gasPrices looks weird
+      setConvertStatus(`Trancation ID: ${payload.id}, Success: ${payload.success}`)
     });
+    setConvertStatus('Converting...');
   }
 }
