@@ -26,7 +26,9 @@ function printTerraAmount(coin: Coin | null | undefined) {
   if (!coin) {
     return '';
   }
-  return new Dec(coin.amount).div(TERRA_DECIMAL).toString();
+  return new Dec(coin.amount).div(TERRA_DECIMAL).toString()
+    // Remove trailing space
+    .replace(/\.?0+/, '');
 }
 
 export function TerraToShuttle() {
