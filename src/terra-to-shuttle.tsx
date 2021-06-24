@@ -126,7 +126,7 @@ export function TerraToShuttle() {
     const estTxOptions: CreateTxOptions = {
       msgs: [msg],
       memo: ETH_DEST_ADDRESS,
-      gasPrices: {uusd: gasPriceInUusd},
+      gasPrices: new Coins({uusd: gasPriceInUusd}),
     };
     // Fee calculation is a PITA
     // See https://github.com/terra-money/bridge-web-app/blob/060979b7966d66368d54819a7c83f68949e71014/src/hooks/useSend.ts#L139-L197
@@ -197,7 +197,6 @@ Estimated amount to expect in Ethereum: ${ printTerraAmount(estTx.amount.sub(uus
     });
     extension.once('onPost', payload => {
       console.log(payload);
-      // TODO: Check as to why gasPrices looks weird
       setConvertStatus(`Trancation ID: ${payload.id}, Success: ${payload.success}`)
     });
     setConvertStatus('Converting...');
