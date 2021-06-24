@@ -84,7 +84,7 @@ export function TerraToShuttle() {
         <div>
           <pre>{ printTerraAmount(estTx?.estFees?.amount?.get('uusd')) } UST</pre>
         </div>
-        <EstTxToShuttle estTx={estTx} extension={extension} />
+        <EstTxToShuttle estTx={estTx} extension={extension} balance={balance} />
       </div>
     </div>
   );
@@ -137,20 +137,22 @@ export function TerraToShuttle() {
     // Fee calculation is a PITA. Assume everything here is being calculated in uusd
     const taxAmount = await terra.utils.calculateTax(amountToConvert);
     // From https://tequila-fcd.terra.dev/v1/txs/gas_prices
-    const gasFeeForGasLimit = new Int(gasPriceInUusd).mul(estimatedFee.gas); // in uusd
+    const gasFeeForGasLimit = new Int(estimatedFee.gas).mul(gasPriceInUusd).ceil(); // in uusd
 
-    const estFeeBeforeMin = taxAmount.add(gasFeeForGasLimit);
-    const estFee = estFeeBeforeMin.amount.lessThan(MIN_FEE.amount) ? MIN_FEE : estFeeBeforeMin;
+    const estFee = taxAmount.add(gasFeeForGasLimit);
+    const relayingFeeBeforMin = amountToConvert.mul(0.1 * 0.01); // 0.1%
+    const relayingFee = relayingFeeBeforMin.amount.lessThan(MIN_FEE.amount) ? MIN_FEE : relayingFeeBeforMin; // Or $1
     // Need to apply min fee
     const fullFee = new StdFee(estimatedFee.gas, [estFee]);
     console.log(
       'fullFee', fullFee.amount.toString(),
-      'gasFeeNoTax', gasFeeForGasLimit.toString()
+      'gasFeeNoTax', gasFeeForGasLimit.toString(),
     );
     setEstTx({
       amount: amountToConvert,
       estTx: estTxOptions,
       estFees: fullFee,
+      relayingFee,
     });
   }
 }
@@ -159,9 +161,20 @@ type EstTx = {
   amount: Coin,
   estTx: CreateTxOptions,
   estFees: StdFee,
+  relayingFee: Coin,
 };
 
-function EstTxToShuttle({estTx, extension}: {estTx: EstTx | null, extension: Extension | null}) {
+type EstTxToShuttleProps = {
+  balance: Coins | null,
+  estTx: EstTx | null,
+  extension: Extension | null,
+};
+
+function EstTxToShuttle({
+  balance,
+  estTx,
+  extension
+}: EstTxToShuttleProps) {
   const [convertStatus, setConvertStatus] = useState<string | null>(null);
 
   if (!estTx) {
@@ -173,12 +186,16 @@ function EstTxToShuttle({estTx, extension}: {estTx: EstTx | null, extension: Ext
     return null;
   }
 
+  const fees = estTx.estFees?.amount.get('uusd');
+  const expectedNewBalance = fees && balance?.get('uusd')?.sub(estTx.amount)?.sub(fees);
+
   return (
     <div>
       <pre>
 {`Amount: ${ printTerraAmount(estTx.amount) }
-Fees: ${ printTerraAmount(estTx.estFees?.amount.get('uusd')) }
-Estimated amount to expect in Ethereum: ${ printTerraAmount(estTx.amount.sub(uusdFees.amount)) }`}
+Fees: ${ printTerraAmount(fees) }
+Expected new balance: ${ printTerraAmount(expectedNewBalance) }
+Estimated amount to expect in Ethereum: ${ printTerraAmount(estTx.amount.sub(estTx.relayingFee.amount)) }`}
       </pre>
       <button onClick={convert} disabled={Boolean(convertStatus)}>
         { convertStatus ? convertStatus : 'Convert!' }
