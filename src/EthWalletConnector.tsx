@@ -1,5 +1,5 @@
 import React, { createContext, useEffect, useRef, useState } from "react";
-import { ethers, utils, BigNumber } from "ethers";
+import { ethers, utils, BigNumber, providers } from "ethers";
 import { ERC20_ABI } from "./erc20";
 import SHUTTLE_ABI from "./shuttle-abi";
 
@@ -11,8 +11,10 @@ const UST_CONTRACT = {
 const ETH_TARGET_NETWORK = 'ropsten';
 
 export type EthereumContextProps = {
-  USTBalance?: Balance | null,
-  publicAddress?: string | null,
+  USTBalance: Balance | null,
+  publicAddress: string | null,
+  provider: ethers.providers.Web3Provider | null,
+  signer: ethers.providers.JsonRpcSigner | null,
 };
 
 // Only works with Metamask right now.
@@ -21,7 +23,12 @@ const signer = provider.getSigner();
 const erc20 = new ethers.Contract(UST_CONTRACT[ETH_TARGET_NETWORK], ERC20_ABI, provider);
 const shuttleContract = new ethers.Contract(UST_CONTRACT[ETH_TARGET_NETWORK], SHUTTLE_ABI, signer);
 
-export const EthereumContext = createContext<EthereumContextProps>({});
+export const EthereumContext = createContext<EthereumContextProps>({
+  USTBalance: null,
+  publicAddress: null,
+  provider: null,
+  signer: null,
+});
 
 type Props = {
   children: React.ReactNode,
@@ -61,8 +68,11 @@ export function EthWalletConnector({children}: Props) {
         }
       </div>
       <EthereumContext.Provider value={{
+        /* useMemo */
         USTBalance,
         publicAddress,
+        provider,
+        signer,
       }}>
         {children}
       </EthereumContext.Provider>

@@ -1,5 +1,6 @@
-import React, { useState } from "react";
-import { ethers, utils, BigNumber } from "ethers";
+import React, { useContext, useEffect, useState } from "react";
+import { ethers, utils, BigNumber, providers } from "ethers";
+import { EthereumContext } from "./EthWalletConnector";
 
 // Assume this is injected by Metamask
 declare global {
@@ -15,23 +16,20 @@ const UST_CONTRACT = {
 };
 const ETH_TARGET_NETWORK = 'ropsten';
 
-// Only works with Metamask right now.
-const provider = new ethers.providers.Web3Provider(window.ethereum);
-const signer = provider.getSigner();
-
 export function EthSideComponent() {
-  const [publicAddress, setPublicAddress] = useState<string | null>(null);
   const [convertStatus, setConvertStatus] = useState<string | null>(null);
   const [amountMinted, setAmountMinted] = useState<string | null>(null);
+  const {publicAddress, provider, signer} = useContext(EthereumContext);
+
+  useEffect(() => {
+    if (provider) {
+      connect();
+    }
+  }, [provider]);
 
   return (
     <div>
       <h3>Etherum Conversion to USDC</h3>
-      <div>
-        <button onClick={connect} disabled={Boolean(publicAddress)}>
-          {publicAddress ? `Connected to ${publicAddress}` : 'Connect'}
-        </button>
-      </div>
       {
         publicAddress ?
         (
@@ -51,10 +49,11 @@ export function EthSideComponent() {
   );
 
   async function connect() {
-    await provider.send("eth_requestAccounts", []);
-    const publicAddress = await signer.getAddress();
-    setPublicAddress(publicAddress);
-
+    if (!publicAddress || !provider) {
+      console.warn('Connect called without provider or publicAddress.')
+      return;
+    }
+    
     // Look for transfers to the target address
     // Since it's bridged, this is minted (i.e. fromAddress=0x0).
     const filter = {
@@ -74,6 +73,11 @@ export function EthSideComponent() {
   }
 
   function go() {
+    if (!signer) {
+      console.warn('Convert called without signer.')
+      return;
+    }
+
     setConvertStatus('Fetching from 1inch...');
 
     // https://etherscan.io/token/0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48

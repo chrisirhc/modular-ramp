@@ -49,9 +49,6 @@ export function TerraToShuttle() {
         }}>
           Estimate
         </button>
-        <div>
-          <pre>{ printTerraAmount(estTx?.estFees?.amount?.get('uusd')) } UST</pre>
-        </div>
         <EstTxToShuttle estTx={estTx} extension={extension} balance={balance} />
       </div>
     </div>
