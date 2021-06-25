@@ -1,5 +1,7 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useContext } from "react";
 import { LCDClient, Extension, Coin, Coins, Dec, MsgSend, StdFee, CreateTxOptions, Int } from "@terra-money/terra.js";
+import { TerraContext } from "./WalletConnector";
+import { getLCDClient, printTerraAmount } from "./utils";
 
 type ConnectResponse = {
   address: string
@@ -16,52 +18,16 @@ const SHUTTLE_TO_TERRA_ADDRESS = {
 
 const MIN_FEE = new Coin('uusd', new Int(1 * TERRA_DECIMAL));
 
-// connect to soju testnet
-const terra = new LCDClient({
-  URL: 'https://tequila-lcd.terra.dev',
-  chainID: 'tequila-0004',
-});
-
-function printTerraAmount(coin: Coin | null | undefined) {
-  if (!coin) {
-    return '';
-  }
-  return new Dec(coin.amount).div(TERRA_DECIMAL).toString()
-    // Remove trailing space
-    .replace(/\.?0+/, '');
-}
-
 export function TerraToShuttle() {
-  const [extension, setExtension] = useState<Extension | null>(null);
-  const [wallet, setWallet] = useState<ConnectResponse | null>(null);
-  const [balance, setBalance] = useState<Coins | null>(null);
   const [estTx, setEstTx] = useState<EstTx | null>(null);
   const amountToConvertInputEl = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    getBalance();
-  }, [wallet])
-
+  const terraContext = useContext(TerraContext);
+  const {address, balance, extension} = terraContext;
   const uusdBal = balance && balance.get("uusd");
 
   return (
     <div>
       <h3>Terra To Shuttle</h3>
-      <button onClick={connect} disabled={Boolean(wallet)}>
-        {
-          wallet ?
-          `Connected to ${wallet.address}` :
-          'Connect to Terra Station'
-        }
-      </button>
-      {
-        balance && balance.get("uusd") ? (
-          <div>
-            UUSD balance
-            <pre>{ printTerraAmount(uusdBal) } UST</pre>
-          </div>
-        ) : null
-      }
       <div>
         <label>
           Amount to convert from UST
@@ -91,25 +57,8 @@ export function TerraToShuttle() {
     </div>
   );
 
-  function connect() {
-    const extension = new Extension();
-    extension.connect();
-    extension.on('onConnect', (w: ConnectResponse) => {
-      setWallet(w);
-    });
-    setExtension(extension);
-  }
-
-  async function getBalance() {
-    if (!wallet) {
-      return;
-    }
-    const balance = await terra.bank.balance(wallet.address);
-    setBalance(balance);
-  }
-
   async function toShuttle(uusdDec: string) {
-    if (!wallet) {
+    if (!address) {
       return;
     }
 
@@ -117,7 +66,7 @@ export function TerraToShuttle() {
 
     // https://docs.terra.money/dev/#currency-denominations
     const msg = new MsgSend(
-      wallet.address,
+      address,
       SHUTTLE_TO_TERRA_ADDRESS[ETH_TARGET_NETWORK],
       new Coins([
         amountToConvert
@@ -132,7 +81,8 @@ export function TerraToShuttle() {
     };
     // Fee calculation is a PITA
     // See https://github.com/terra-money/bridge-web-app/blob/060979b7966d66368d54819a7c83f68949e71014/src/hooks/useSend.ts#L139-L197
-    const estTx = await terra.tx.create(wallet.address, estTxOptions);
+    const terra = getLCDClient();
+    const estTx = await terra.tx.create(address, estTxOptions);
     const estimatedFee = await terra.tx.estimateFee(estTx);
     console.log('estimated gas needed', estimatedFee.gas);
 

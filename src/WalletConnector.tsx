@@ -1,13 +1,20 @@
 import React, { createContext, useEffect, useRef, useState } from "react";
-import { LCDClient, Extension, Coin, Coins, Dec, MsgSend, StdFee, CreateTxOptions, Int } from "@terra-money/terra.js";
-import { TERRA_DECIMAL, printTerraAmount } from "./utils";
+import { Extension, Coin, Coins, Dec, MsgSend, StdFee, CreateTxOptions, Int } from "@terra-money/terra.js";
+import { getLCDClient, TERRA_DECIMAL, printTerraAmount } from "./utils";
 
 export type TerraContextProps = {
-  extension?: Extension | null,
-  address?: string | null,
+  extension: Extension | null,
+  address: string | null,
+  balance: Coins | null,
+  refreshBalance: Function,
 };
 
-export const TerraContext = createContext<TerraContextProps>({});
+export const TerraContext = createContext<TerraContextProps>({
+  extension: null,
+  address: null,
+  balance: null,
+  refreshBalance: () => {},
+});
 
 type Props = {
   children: React.ReactNode,
@@ -16,8 +23,12 @@ type Props = {
 export function WalletConnector({children}: Props) {
   const [extension, setExtension] = useState<Extension | null>(null);
   const [wallet, setWallet] = useState<string | null>(null);
+  const [balance, setBalance] = useState<Coins | null>(null);
+  useEffect(() => {
+    refreshBalance()
+  }, [wallet]);
 
-  const uusdBal = null; // balance && balance.get("uusd");
+  const uusdBal = balance && balance.get("uusd");
 
   return (
     <div>
@@ -43,8 +54,11 @@ export function WalletConnector({children}: Props) {
         }
       </div>
       <TerraContext.Provider value={{
+        /* TODO: Use Memo */
         extension,
-        address: wallet
+        address: wallet,
+        balance,
+        refreshBalance,
       }}>
         {children}
       </TerraContext.Provider>
@@ -64,11 +78,11 @@ export function WalletConnector({children}: Props) {
     setExtension(extension);
   }
 
-  // async function getBalance() {
-  //   if (!wallet) {
-  //     return;
-  //   }
-  //   const balance = await terra.bank.balance(wallet.address);
-  //   setBalance(balance);
-  // }
+  async function refreshBalance() {
+    if (!wallet) {
+      return;
+    }
+    const balance = await getLCDClient().bank.balance(wallet);
+    setBalance(balance);
+  }
 }
