@@ -1,7 +1,9 @@
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useContext } from "react";
 import { ethers, utils, BigNumber } from "ethers";
 import { bech32 } from "bech32";
 import { ERC20_ABI } from "./erc20";
+import SHUTTLE_ABI from "./shuttle-abi";
+import { TerraContext } from "./WalletConnector";
 
 /* bech32 */
 const decodeTerraAddressOnEtherBase = (address: string): string => {
@@ -32,6 +34,7 @@ const ETH_TARGET_NETWORK = 'ropsten';
 const provider = new ethers.providers.Web3Provider(window.ethereum);
 const signer = provider.getSigner();
 const erc20 = new ethers.Contract(UST_CONTRACT[ETH_TARGET_NETWORK], ERC20_ABI, provider);
+const shuttleContract = new ethers.Contract(UST_CONTRACT[ETH_TARGET_NETWORK], SHUTTLE_ABI, signer);
 
 type Balance = {
   balance: BigNumber,
@@ -48,6 +51,7 @@ export function EthToTerra() {
   const [convertStatus, setConvertStatus] = useState<string | null>(null);
   const [balanceOfErc20, setBalanceOfErc20] = useState<Balance | null>(null);
   const amountToConvertInputEl = useRef<HTMLInputElement>(null);
+  const terraContext = useContext(TerraContext);
 
   return (
     <div>
@@ -76,6 +80,10 @@ export function EthToTerra() {
             ref={amountToConvertInputEl}
           />
         </label>
+        <div>
+          <button onClick={() =>
+            convert(terraContext.address, amountToConvertInputEl.current?.value)}>Convert</button>
+        </div>
       </div>
     </div>
   );
@@ -105,6 +113,22 @@ export function EthToTerra() {
     //     const amountMintedBN = BigNumber.from(data);
     //     setAmountMinted(amountMinted);
     // });
+  }
+
+  async function convert(toAddress: string | null | undefined, sendAmountInput: string | undefined) {
+    if (!toAddress || !balanceOfErc20 || !sendAmountInput) {
+      return;
+    }
+    const decoded = decodeTerraAddressOnEtherBase(toAddress)
+    const sendAmount = utils.parseUnits(sendAmountInput, balanceOfErc20.decimals);
+    try {
+      const tx = shuttleContract.burn(sendAmount, decoded.padEnd(66, '0'))
+      const { hash } = await tx;
+      return { success: true, hash }
+    } catch (error) {
+      throw error;
+      // return handleTxErrorFromEtherBase(error)
+    }
   }
 
   function go() {
