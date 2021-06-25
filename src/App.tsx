@@ -5,15 +5,18 @@ import { WalletConnector } from "./WalletConnector";
 import { TerraToShuttle } from "./terra-to-shuttle";
 import { EthSideComponent } from "./eth-side";
 import { EthToTerra } from "./eth-to-terra";
+import { EthWalletConnector } from './EthWalletConnector';
 
 
 function App() {
   return (
     <div className="App">
       <WalletConnector>
-        <TerraToShuttle />
-        <EthSideComponent />
-        <EthToTerra />
+        <EthWalletConnector>
+          <TerraToShuttle />
+          <EthSideComponent />
+          <EthToTerra />
+        </EthWalletConnector>
       </WalletConnector>
     </div>
   );
