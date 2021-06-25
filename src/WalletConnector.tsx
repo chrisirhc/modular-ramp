@@ -21,22 +21,27 @@ export function WalletConnector({children}: Props) {
 
   return (
     <div>
-      <h3>Terra To Shuttle</h3>
-      <button onClick={connect} disabled={Boolean(wallet)}>
+      <div style={{
+        border: '1px solid #ccc',
+        padding: '5px',
+      }}>
+        <h3>Terra</h3>
+        <button onClick={connect} disabled={Boolean(wallet)}>
+          {
+            wallet ?
+            `Connected to ${wallet}` :
+            'Connect to Terra Station'
+          }
+        </button>
         {
-          wallet ?
-          `Connected to ${wallet}` :
-          'Connect to Terra Station'
+          uusdBal ? (
+            <div>
+              UUSD balance
+              <pre>{ printTerraAmount(uusdBal) } UST</pre>
+            </div>
+          ) : null
         }
-      </button>
-      {
-        uusdBal ? (
-          <div>
-            UUSD balance
-            <pre>{ printTerraAmount(uusdBal) } UST</pre>
-          </div>
-        ) : null
-      }
+      </div>
       <TerraContext.Provider value={{
         extension,
         address: wallet
