@@ -73,5 +73,10 @@ export function EthWalletConnector({children}: Props) {
     await provider.send("eth_requestAccounts", []);
     const publicAddress = await signer.getAddress();
     setPublicAddress(publicAddress);
+
+    const balance: BigNumber = await erc20.balanceOf(publicAddress);
+    const decimals = await erc20.decimals();
+    const symbol = await erc20.symbol();
+    setUSTBalance({balance, decimals, symbol});
   }
 }
