@@ -6,16 +6,18 @@ import { TerraToShuttle } from "./terra-to-shuttle";
 import { EthSideComponent } from "./eth-side";
 import { EthToTerra } from "./eth-to-terra";
 import { EthWalletConnector } from './EthWalletConnector';
-
+import MockDesign from "./MockDesign";
+import { AllSteps } from './ConversionStep';
 
 function App() {
   return (
     <div className="App">
       <WalletConnector>
         <EthWalletConnector>
-          <TerraToShuttle />
+          <AllSteps />
+          {/* <TerraToShuttle />
           <EthSideComponent />
-          <EthToTerra />
+          <EthToTerra /> */}
         </EthWalletConnector>
       </WalletConnector>
     </div>
