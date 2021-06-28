@@ -1,4 +1,4 @@
-import React, { createContext, useEffect, useRef, useState } from "react";
+import React, { createContext, useContext, useEffect, useRef, useState } from "react";
 import {
   Button,
   FormControl,
@@ -17,6 +17,9 @@ import {
   Code,
 } from "@chakra-ui/react";
 
+import {EthereumContext} from "./EthWalletConnector";
+import {TerraContext} from "./WalletConnector";
+
 type Currency = {
   network: 'eth' | 'terra' | 'bsc',
   currency: 'UST' | 'USDC' | string | null,
@@ -30,6 +33,7 @@ type FirstStepProps = {
 };
 
 type ConversionStepProps = {
+  stepNumber: number,
   input: Currency,
   onChange: (output: Currency) => void,
   // output, fees
@@ -44,7 +48,8 @@ export function AllSteps() {
         spacing={4}>
         <FirstStep onChange={(output) => setSteps([output, ...steps.slice(1)])}/>
         { steps.map((step, i) => (
-          <Step 
+          <Step
+            stepNumber={i}
             key={i}
             input={step}
             onChange={(output) => setSteps([
@@ -125,10 +130,13 @@ export function FirstStep({onChange}: FirstStepProps) {
   );
 }
 
-export function Step({input, onChange}: ConversionStepProps) {
+export function Step({stepNumber, input, onChange}: ConversionStepProps) {
   // Input is first step, it restricts output currency
   return (
-    <FirstStep onChange={onChange} />
+    <Box>
+      <Heading size="md">Step {stepNumber + 1}</Heading>
+      <FirstStep onChange={onChange} />
+    </Box>
   );
 }
 
@@ -137,10 +145,14 @@ type TransactionSummaryProps = {
 };
 
 function TransactionSummary({steps}: TransactionSummaryProps) {
+  const terraContext = useContext(TerraContext);
+  const ethereumContext = useContext(EthereumContext);
+
   return (
-    <Box bg="tomato" m={5} p={2} borderRadius="md">
+    <VStack bg="tomato" m={5} p={2} borderRadius="md" align="start">
       <Heading size="lg">Summary</Heading>
       <Code>{JSON.stringify(steps, null, 2)}</Code>
-    </Box>
+      <Button>Estimate Transaction</Button>
+    </VStack>
   );
 }
