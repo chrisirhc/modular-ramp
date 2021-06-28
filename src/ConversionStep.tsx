@@ -148,15 +148,21 @@ type TransactionSummaryProps = {
 function TransactionSummary({steps}: TransactionSummaryProps) {
   const terraContext = useContext(TerraContext);
   const ethereumContext = useContext(EthereumContext);
+  const [executionSteps, setExecutionSteps] = useState<Step[] | null>(null);
 
   return (
     <VStack bg="tomato" m={5} p={2} borderRadius="md" align="start">
       <Heading size="lg">Summary</Heading>
-      <Code>{JSON.stringify(steps, null, 2)}</Code>
+      <Code as="pre">{JSON.stringify(steps, null, 2)}</Code>
       <Button onClick={() =>
-        estimate({steps, terraContext, ethereumContext})}>
+        estimate({steps, terraContext, ethereumContext}, setExecutionSteps)}>
         Estimate Transaction
       </Button>
+      {
+        executionSteps && (
+          <Code w="500px" as="pre" fontSize="8">{JSON.stringify(executionSteps, null, 2)}</Code>
+        )
+      }
     </VStack>
   );
 }
@@ -173,12 +179,15 @@ type Step = {
   info: {},
 };
 
-async function estimate({steps, terraContext, ethereumContext}: estimateArg) {
+async function estimate(
+  {steps, terraContext, ethereumContext}: estimateArg,
+  setExecutionSteps: (steps: Step[]) => void) {
   // Do a bunch of things and then update the estimates and create intermediate transactions.
   const executionSteps: Step[] = [];
   for (let i = 1; i < steps.length; i++) {
-    executionSteps[i] = await estimateStep(steps[i-1], steps[i], {terraContext, ethereumContext});
+    executionSteps.push(await estimateStep(steps[i-1], steps[i], {terraContext, ethereumContext}));
   }
+  setExecutionSteps(executionSteps);
 }
 
 async function estimateStep(
