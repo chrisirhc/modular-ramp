@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState, useContext } from "react";
 import { LCDClient, Extension, Coin, Coins, Dec, MsgSend, StdFee, CreateTxOptions, Int } from "@terra-money/terra.js";
 import { TerraContext } from "./WalletConnector";
-import { TerraToEth, EstTx } from "./operations/terra";
+import { TerraToEth, EstTx, Run } from "./operations/terra";
 import { getLCDClient, printTerraAmount, TERRA_DECIMAL } from "./utils";
 
 export function TerraToShuttle() {
@@ -57,6 +57,7 @@ function EstTxToShuttle({
   extension
 }: EstTxToShuttleProps) {
   const [convertStatus, setConvertStatus] = useState<string | null>(null);
+  const terraContext = useContext(TerraContext);
 
   if (!estTx) {
     return null;
@@ -78,7 +79,7 @@ Fees: ${ printTerraAmount(fees) }
 Expected new balance: ${ printTerraAmount(expectedNewBalance) }
 Estimated amount to expect in Ethereum: ${ printTerraAmount(estTx.amount.sub(estTx.relayingFee.amount)) }`}
       </pre>
-      <button onClick={convert} disabled={Boolean(convertStatus)}>
+      <button onClick={() => Run(estTx, {onProgress: setConvertStatus, terraContext})} disabled={Boolean(convertStatus)}>
         { convertStatus ? convertStatus : 'Convert!' }
       </button>
     </div>
