@@ -13,6 +13,8 @@ import {
   StackDivider,
   Box,
   HStack,
+  Heading,
+  Code,
 } from "@chakra-ui/react";
 
 type Currency = {
@@ -135,5 +137,10 @@ type TransactionSummaryProps = {
 };
 
 function TransactionSummary({steps}: TransactionSummaryProps) {
-  return null;
+  return (
+    <Box bg="tomato" m={5} p={2} borderRadius="md">
+      <Heading size="lg">Summary</Heading>
+      <Code>{JSON.stringify(steps, null, 2)}</Code>
+    </Box>
+  );
 }
