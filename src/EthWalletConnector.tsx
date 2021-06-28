@@ -21,12 +21,6 @@ export type EthereumContextProps = {
   signer: ethers.providers.JsonRpcSigner | null,
 };
 
-// Only works with Metamask right now.
-const provider = new ethers.providers.Web3Provider(window.ethereum);
-const signer = provider.getSigner();
-const erc20 = new ethers.Contract(UST_CONTRACT[ETH_TARGET_NETWORK], ERC20_ABI, provider);
-const shuttleContract = new ethers.Contract(UST_CONTRACT[ETH_TARGET_NETWORK], SHUTTLE_ABI, signer);
-
 export const EthereumContext = createContext<EthereumContextProps>({
   USTBalance: null,
   publicAddress: null,
@@ -51,6 +45,10 @@ function printBalance(bal: Balance | null) {
 export function EthWalletConnector({children}: Props) {
   const [publicAddress, setPublicAddress] = useState<string | null>(null);
   const [USTBalance, setUSTBalance] = useState<Balance | null>(null);
+  const [providerAndSigner, setProviderAndSigner] = useState<{
+    provider: ethers.providers.Web3Provider | null,
+    signer: ethers.providers.JsonRpcSigner | null,
+  } | null>(null);
 
   return (
     <div>
@@ -75,8 +73,8 @@ export function EthWalletConnector({children}: Props) {
         /* useMemo */
         USTBalance,
         publicAddress,
-        provider,
-        signer,
+        provider: providerAndSigner?.provider || null,
+        signer: providerAndSigner?.signer || null,
       }}>
         {children}
       </EthereumContext.Provider>
@@ -84,6 +82,15 @@ export function EthWalletConnector({children}: Props) {
   );
 
   async function connect() {
+    // Only works with Metamask right now.
+    const provider = new ethers.providers.Web3Provider(window.ethereum);
+    const signer = provider.getSigner();
+    const erc20 = new ethers.Contract(UST_CONTRACT[ETH_TARGET_NETWORK], ERC20_ABI, provider);
+    const shuttleContract = new ethers.Contract(UST_CONTRACT[ETH_TARGET_NETWORK], SHUTTLE_ABI, signer);
+    setProviderAndSigner({
+      provider, signer
+    });
+
     await provider.send("eth_requestAccounts", []);
     const publicAddress = await signer.getAddress();
     setPublicAddress(publicAddress);

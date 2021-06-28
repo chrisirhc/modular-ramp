@@ -4,6 +4,7 @@ import { bech32 } from "bech32";
 import { ERC20_ABI } from "./erc20";
 import SHUTTLE_ABI from "./shuttle-abi";
 import { TerraContext } from "./WalletConnector";
+import { EthereumContext } from "./EthWalletConnector";
 
 /* bech32 */
 const decodeTerraAddressOnEtherBase = (address: string): string => {
@@ -30,12 +31,6 @@ const UST_CONTRACT = {
 };
 const ETH_TARGET_NETWORK = 'ropsten';
 
-// Only works with Metamask right now.
-const provider = new ethers.providers.Web3Provider(window.ethereum);
-const signer = provider.getSigner();
-const erc20 = new ethers.Contract(UST_CONTRACT[ETH_TARGET_NETWORK], ERC20_ABI, provider);
-const shuttleContract = new ethers.Contract(UST_CONTRACT[ETH_TARGET_NETWORK], SHUTTLE_ABI, signer);
-
 type Balance = {
   balance: BigNumber,
   decimals: any,
@@ -52,6 +47,7 @@ export function EthToTerra() {
   const [balanceOfErc20, setBalanceOfErc20] = useState<Balance | null>(null);
   const amountToConvertInputEl = useRef<HTMLInputElement>(null);
   const terraContext = useContext(TerraContext);
+  const {provider, signer} = useContext(EthereumContext);
 
   return (
     <div>
@@ -89,9 +85,15 @@ export function EthToTerra() {
   );
 
   async function connect() {
+    if (!provider || !signer) {
+      return;
+    }
+
     await provider.send("eth_requestAccounts", []);
     const publicAddress = await signer.getAddress();
     setPublicAddress(publicAddress);
+
+    const erc20 = new ethers.Contract(UST_CONTRACT[ETH_TARGET_NETWORK], ERC20_ABI, provider);
 
     const balance: BigNumber = await erc20.balanceOf(publicAddress);
     const decimals = await erc20.decimals();
@@ -119,6 +121,12 @@ export function EthToTerra() {
     if (!toAddress || !balanceOfErc20 || !sendAmountInput) {
       return;
     }
+
+    if (!signer) {
+      return;
+    }
+
+    const shuttleContract = new ethers.Contract(UST_CONTRACT[ETH_TARGET_NETWORK], SHUTTLE_ABI, signer);
     const decoded = decodeTerraAddressOnEtherBase(toAddress)
     const sendAmount = utils.parseUnits(sendAmountInput, balanceOfErc20.decimals);
     try {
