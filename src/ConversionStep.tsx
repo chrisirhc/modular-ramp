@@ -19,6 +19,7 @@ import {
 
 import {EthereumContext, EthereumContextProps} from "./EthWalletConnector";
 import {TerraContext, TerraContextProps} from "./WalletConnector";
+import {TerraToEth} from "./operations/terra";
 
 type Currency = {
   network: 'eth' | 'terra' | 'bsc',
@@ -182,16 +183,25 @@ async function estimate({steps, terraContext, ethereumContext}: estimateArg) {
 
 async function estimateStep(
   input: Currency, output: Currency,
-  {terraContext, ethereumContext}: {terraContext: TerraContextProps, ethereumContext: EthereumContextProps}): Step {
+  {terraContext, ethereumContext}: {terraContext: TerraContextProps, ethereumContext: EthereumContextProps}): Promise<Step> {
   if (input.network === 'terra' && output.network === 'eth') {
     // To Shuttle
+    if (!input.amount) {
+      throw new Error('No input amount');
+    }
+    const estTx = await TerraToEth(input.amount, {terraContext});
+    return {
+      network: 'terra',
+      args: estTx,
+      info: estTx,
+    };
   } else if (input.network === 'eth' && output.network === 'terra') {
     // To Shuttle
   } else if (input.network === 'eth' && output.network === 'eth') {
     // 1inch route
-  } else {
-    throw new Error(
-      `Unimplemented operation ${JSON.stringify(input)} to ${JSON.stringify(output)}`
-    )
   }
+
+  throw new Error(
+    `Unimplemented operation ${JSON.stringify(input)} to ${JSON.stringify(output)}`
+  )
 }
