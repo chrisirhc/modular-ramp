@@ -24,7 +24,7 @@ import {
 
 import {EthereumContext, EthereumContextProps} from "./EthWalletConnector";
 import {TerraContext, TerraContextProps} from "./WalletConnector";
-import {TerraToEth} from "./operations/terra";
+import {TerraToEth, Run as TerraRun, RunArg as TerraRunArg} from "./operations/terra";
 
 type Currency = {
   network: 'eth' | 'terra' | 'bsc',
@@ -197,7 +197,7 @@ type estimateArg = {
 
 type Step = {
   network: 'eth' | 'terra' | 'bsc',
-  args: {},
+  args: TerraRunArg,
   info: {},
 };
 
@@ -235,4 +235,22 @@ async function estimateStep(
   throw new Error(
     `Unimplemented operation ${JSON.stringify(input)} to ${JSON.stringify(output)}`
   )
+}
+
+type executeArg = {
+  executionSteps: Step[],
+  terraContext: TerraContextProps,
+  ethereumContext: EthereumContextProps,
+};
+
+async function execute(
+  {executionSteps, terraContext, ethereumContext}: executeArg) {
+  executionSteps.forEach(({network, args}) => {
+    switch (network) {
+      case 'terra':
+        TerraRun(args, {terraContext});
+        break;
+    }
+
+  });
 }

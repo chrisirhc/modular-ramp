@@ -12,7 +12,7 @@ const SHUTTLE_TO_TERRA_ADDRESS = {
 
 const MIN_FEE = new Coin('uusd', new Int(1 * TERRA_DECIMAL));
 
-export type EstTx = {
+export interface EstTx {
   amount: Coin,
   estTx: CreateTxOptions,
   estFees: StdFee,
@@ -71,11 +71,13 @@ export async function TerraToEth(
   };
 }
 
+export type RunArg = EstTx;
+
 export async function Run(estTx: EstTx, {
-  onProgress,
+  onProgress = () => {},
   terraContext,
 }: {
-  onProgress: (status: string) => void,
+  onProgress?: (status: string) => void,
   terraContext: TerraContextProps,
 }) {
   const {extension} = terraContext;
