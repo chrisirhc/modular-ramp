@@ -1,5 +1,4 @@
 import React from 'react';
-import './App.css';
 import { WalletConnector } from "./WalletConnector";
 import { TerraToShuttle } from "./terra-to-shuttle";
 import { EthSideComponent } from "./eth-side";
