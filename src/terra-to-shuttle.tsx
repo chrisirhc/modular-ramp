@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState, useContext } from "react";
 import { LCDClient, Extension, Coin, Coins, Dec, MsgSend, StdFee, CreateTxOptions, Int } from "@terra-money/terra.js";
 import { TerraContext } from "./WalletConnector";
-import { TerraToEth } from "./operations/terra";
+import { TerraToEth, EstTx } from "./operations/terra";
 import { getLCDClient, printTerraAmount, TERRA_DECIMAL } from "./utils";
 
 export function TerraToShuttle() {
@@ -41,19 +41,9 @@ export function TerraToShuttle() {
   );
 
   async function toShuttle(uusdDec: string) {
-    if (!address) {
-      return;
-    }
-    setEstTx(await TerraToEth(address, uusdDec));
+    setEstTx(await TerraToEth(uusdDec, {terraContext}));
   }
 }
-
-type EstTx = {
-  amount: Coin,
-  estTx: CreateTxOptions,
-  estFees: StdFee,
-  relayingFee: Coin,
-};
 
 type EstTxToShuttleProps = {
   balance: Coins | null,
@@ -94,19 +84,4 @@ Estimated amount to expect in Ethereum: ${ printTerraAmount(estTx.amount.sub(est
     </div>
   );
 
-  function convert() {
-    if (!estTx || !extension) {
-      return;
-    }
-
-    extension.post({
-      ...estTx.estTx,
-      fee: estTx.estFees,
-    });
-    extension.once('onPost', payload => {
-      console.log(payload);
-      setConvertStatus(`Trancation ID: ${payload.id}, Success: ${payload.success}`)
-    });
-    setConvertStatus('Converting...');
-  }
 }

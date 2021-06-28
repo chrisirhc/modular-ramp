@@ -1,5 +1,6 @@
 import { LCDClient, Extension, Coin, Coins, Dec, MsgSend, StdFee, CreateTxOptions, Int } from "@terra-money/terra.js";
 import { getLCDClient, printTerraAmount, TERRA_DECIMAL } from "../utils";
+import {TerraContextProps} from "../WalletConnector";
 
 const ETH_TARGET_NETWORK = 'ropsten';
 const ETH_DEST_ADDRESS = '0x88fc7C092aFF64bf5319e9F1Ab2D9DDC5f854449';
@@ -11,10 +12,22 @@ const SHUTTLE_TO_TERRA_ADDRESS = {
 
 const MIN_FEE = new Coin('uusd', new Int(1 * TERRA_DECIMAL));
 
+export type EstTx = {
+  amount: Coin,
+  estTx: CreateTxOptions,
+  estFees: StdFee,
+  relayingFee: Coin,
+};
+
 export async function TerraToEth(
-  address: string,
-  uusdDec: string
-) {
+  uusdDec: string,
+  {terraContext}: {terraContext: TerraContextProps}
+): Promise<EstTx> {
+  const {address} = terraContext;
+  if (!address) {
+    throw new Error('No address found.');
+  }
+
   const amountToConvert = new Coin('uusd', new Dec(uusdDec).mul(TERRA_DECIMAL).toInt());
 
   // https://docs.terra.money/dev/#currency-denominations
@@ -56,4 +69,27 @@ export async function TerraToEth(
     estFees: fullFee,
     relayingFee,
   };
+}
+
+export async function Run(estTx: EstTx, {
+  onProgress,
+  terraContext,
+}: {
+  onProgress: (status: string) => void,
+  terraContext: TerraContextProps,
+}) {
+  const {extension} = terraContext;
+  if (!estTx || !extension) {
+    return;
+  }
+
+  extension.post({
+    ...estTx.estTx,
+    fee: estTx.estFees,
+  });
+  extension.once('onPost', payload => {
+    console.log(payload);
+    onProgress(`Trancation ID: ${payload.id}, Success: ${payload.success}`)
+  });
+  onProgress('Converting...');
 }
