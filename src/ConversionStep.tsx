@@ -12,11 +12,12 @@ import {
   VStack,
   StackDivider,
   Box,
+  HStack,
 } from "@chakra-ui/react";
 
 type Currency = {
   network: 'eth' | 'terra' | 'bsc',
-  currency: 'UST' | 'USDC',
+  currency: 'UST' | 'USDC' | string | null,
   amount?: string, // Might need to check on a standard amount
   // there's some fees involved
 };
@@ -44,7 +45,11 @@ export function AllSteps() {
           <Step 
             key={i}
             input={step}
-            onChange={(output) => setSteps([...steps.slice(0, i), output, ...steps.slice(i + 1)])} />
+            onChange={(output) => setSteps([
+              ...steps.slice(0, i + 1),
+              output,
+              ...steps.slice(i + 2)
+            ])} />
         )) }
         <TransactionSummary steps={steps} />
       </VStack>
@@ -60,23 +65,25 @@ export function FirstStep({onChange}: FirstStepProps) {
   // No constraints, pick whatever you want and handle the estimates
   return (
     <>
-      <FormControl>
-        <FormLabel>Network</FormLabel>
-        <Select placeholder="Select network"
-          onChange={(event) => setNetwork(event.target.value)}>
-          <option>eth</option>
-          <option>terra</option>
-          <option>bsc</option>
-        </Select>
-      </FormControl>
-      <FormControl>
-        <FormLabel>Currency</FormLabel>
-        <Select placeholder="Select currency"
-          onChange={(event) => setCurrency(event.target.value)}>
-          <option>UST</option>
-          <option>USDC</option>
-        </Select>
-      </FormControl>
+      <HStack>
+        <FormControl>
+          <FormLabel>Network</FormLabel>
+          <Select placeholder="Select network"
+            onChange={(event) => setNetwork(event.target.value)}>
+            <option>eth</option>
+            <option>terra</option>
+            <option>bsc</option>
+          </Select>
+        </FormControl>
+        <FormControl>
+          <FormLabel>Currency</FormLabel>
+          <Select placeholder="Select currency"
+            onChange={(event) => setCurrency(event.target.value)}>
+            <option>UST</option>
+            <option>USDC</option>
+          </Select>
+        </FormControl>
+      </HStack>
       <FormControl>
         <FormLabel>Amount</FormLabel>
         <InputGroup>
@@ -99,9 +106,10 @@ export function FirstStep({onChange}: FirstStepProps) {
         if (!(network === 'eth' || network === 'bsc' || network === 'terra')) {
           return;
         }
-        if (!(currency === 'UST' || currency === 'USDC')) {
-          return;
-        }
+        // TODO: Leave validations for later.
+        // if (!(currency === 'UST' || currency === 'USDC')) {
+        //   return;
+        // }
         if (!amountInputRef.current) {
           return;
         }
