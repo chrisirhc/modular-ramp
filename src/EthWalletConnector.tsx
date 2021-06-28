@@ -1,4 +1,8 @@
 import React, { createContext, useEffect, useRef, useState } from "react";
+import {
+  Button,
+} from "@chakra-ui/react";
+
 import { ethers, utils, BigNumber, providers } from "ethers";
 import { ERC20_ABI } from "./erc20";
 import SHUTTLE_ABI from "./shuttle-abi";
@@ -55,9 +59,9 @@ export function EthWalletConnector({children}: Props) {
         padding: '5px',
       }}>
         <h3>Ethereum</h3>
-        <button onClick={connect} disabled={Boolean(publicAddress)}>
+        <Button onClick={connect} disabled={Boolean(publicAddress)}>
           {publicAddress ? `Connected to ${publicAddress}` : 'Connect'}
-        </button>
+        </Button>
         {
           USTBalance ? (
             <div>

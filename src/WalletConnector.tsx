@@ -1,4 +1,8 @@
 import React, { createContext, useEffect, useRef, useState } from "react";
+import {
+  Button,
+} from "@chakra-ui/react";
+
 import { Extension, Coin, Coins, Dec, MsgSend, StdFee, CreateTxOptions, Int } from "@terra-money/terra.js";
 import { getLCDClient, TERRA_DECIMAL, printTerraAmount } from "./utils";
 
@@ -37,13 +41,13 @@ export function WalletConnector({children}: Props) {
         padding: '5px',
       }}>
         <h3>Terra</h3>
-        <button onClick={connect} disabled={Boolean(wallet)}>
+        <Button onClick={connect} disabled={Boolean(wallet)}>
           {
             wallet ?
             `Connected to ${wallet}` :
             'Connect to Terra Station'
           }
-        </button>
+        </Button>
         {
           uusdBal ? (
             <div>

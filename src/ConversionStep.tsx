@@ -95,7 +95,7 @@ export function FirstStep({onChange}: FirstStepProps) {
           />
         </InputGroup>
       </FormControl>
-      <Button onClick={() => {
+      <Button mt={5} onClick={() => {
         if (!(network === 'eth' || network === 'bsc' || network === 'terra')) {
           return;
         }
