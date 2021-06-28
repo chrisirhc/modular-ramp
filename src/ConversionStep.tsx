@@ -9,12 +9,15 @@ import {
   Input,
   InputGroup,
   InputRightElement,
+  VStack,
+  StackDivider,
+  Box,
 } from "@chakra-ui/react";
 
 type Currency = {
   network: 'eth' | 'terra' | 'bsc',
   currency: 'UST' | 'USDC',
-  amount: string, // Might need to check on a standard amount
+  amount?: string, // Might need to check on a standard amount
   // there's some fees involved
 };
 
@@ -32,15 +35,20 @@ type ConversionStepProps = {
 export function AllSteps() {
   const [steps, setSteps] = useState<Currency[]>([]);
   return (
-    <>
-      <FirstStep onChange={(output) => setSteps([output, ...steps.slice(1)])}/>
-      { steps.map((step, i) => (
-        <Step 
-          key={i}
-          input={step}
-          onChange={(output) => setSteps([...steps.slice(0, i), output, ...steps.slice(i + 1)])} />
-      )) }
-    </>
+    <Box p={4} shadow="md" borderWidth="1px" borderRadius="md" m={5}>
+      <VStack 
+        divider={<StackDivider borderColor="gray.200" />}
+        spacing={4}>
+        <FirstStep onChange={(output) => setSteps([output, ...steps.slice(1)])}/>
+        { steps.map((step, i) => (
+          <Step 
+            key={i}
+            input={step}
+            onChange={(output) => setSteps([...steps.slice(0, i), output, ...steps.slice(i + 1)])} />
+        )) }
+        <TransactionSummary steps={steps} />
+      </VStack>
+    </Box>
   );
 }
 
@@ -85,7 +93,6 @@ export function FirstStep({onChange}: FirstStepProps) {
             width="4.5rem"
             children={currency}
           />
-          {/* <InputRightElement children={<CheckIcon color="green.500" />} /> */}
         </InputGroup>
       </FormControl>
       <Button onClick={() => {
@@ -110,5 +117,15 @@ export function FirstStep({onChange}: FirstStepProps) {
 
 export function Step({input, onChange}: ConversionStepProps) {
   // Input is first step, it restricts output currency
-  return (null);
+  return (
+    <FirstStep onChange={onChange} />
+  );
+}
+
+type TransactionSummaryProps = {
+  steps: Currency[],
+};
+
+function TransactionSummary({steps}: TransactionSummaryProps) {
+  return null;
 }
