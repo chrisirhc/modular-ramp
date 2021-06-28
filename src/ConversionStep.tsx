@@ -17,8 +17,8 @@ import {
   Code,
 } from "@chakra-ui/react";
 
-import {EthereumContext} from "./EthWalletConnector";
-import {TerraContext} from "./WalletConnector";
+import {EthereumContext, EthereumContextProps} from "./EthWalletConnector";
+import {TerraContext, TerraContextProps} from "./WalletConnector";
 
 type Currency = {
   network: 'eth' | 'terra' | 'bsc',
@@ -152,7 +152,46 @@ function TransactionSummary({steps}: TransactionSummaryProps) {
     <VStack bg="tomato" m={5} p={2} borderRadius="md" align="start">
       <Heading size="lg">Summary</Heading>
       <Code>{JSON.stringify(steps, null, 2)}</Code>
-      <Button>Estimate Transaction</Button>
+      <Button onClick={() =>
+        estimate({steps, terraContext, ethereumContext})}>
+        Estimate Transaction
+      </Button>
     </VStack>
   );
+}
+
+type estimateArg = {
+  steps: Currency[],
+  terraContext: TerraContextProps,
+  ethereumContext: EthereumContextProps,
+};
+
+type Step = {
+  network: 'eth' | 'terra' | 'bsc',
+  args: {},
+  info: {},
+};
+
+async function estimate({steps, terraContext, ethereumContext}: estimateArg) {
+  // Do a bunch of things and then update the estimates and create intermediate transactions.
+  const executionSteps: Step[] = [];
+  for (let i = 1; i < steps.length; i++) {
+    executionSteps[i] = await estimateStep(steps[i-1], steps[i], {terraContext, ethereumContext});
+  }
+}
+
+async function estimateStep(
+  input: Currency, output: Currency,
+  {terraContext, ethereumContext}: {terraContext: TerraContextProps, ethereumContext: EthereumContextProps}): Step {
+  if (input.network === 'terra' && output.network === 'eth') {
+    // To Shuttle
+  } else if (input.network === 'eth' && output.network === 'terra') {
+    // To Shuttle
+  } else if (input.network === 'eth' && output.network === 'eth') {
+    // 1inch route
+  } else {
+    throw new Error(
+      `Unimplemented operation ${JSON.stringify(input)} to ${JSON.stringify(output)}`
+    )
+  }
 }
