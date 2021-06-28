@@ -15,6 +15,11 @@ import {
   HStack,
   Heading,
   Code,
+  Accordion,
+  AccordionItem,
+  AccordionButton,
+  AccordionPanel,
+  AccordionIcon,
 } from "@chakra-ui/react";
 
 import {EthereumContext, EthereumContextProps} from "./EthWalletConnector";
@@ -160,7 +165,24 @@ function TransactionSummary({steps}: TransactionSummaryProps) {
       </Button>
       {
         executionSteps && (
-          <Code w="500px" as="pre" fontSize="8">{JSON.stringify(executionSteps, null, 2)}</Code>
+          <Box>
+            <Accordion allowToggle>
+              <AccordionItem>
+                <AccordionButton>
+                  <Box flex="1" textAlign="left">
+                    Show Debug Info
+                  </Box>
+                </AccordionButton>
+                <AccordionPanel>
+                  <Code w="500px" as="pre" fontSize="8">{JSON.stringify(executionSteps, null, 2)}</Code>
+                </AccordionPanel>
+              </AccordionItem>
+            </Accordion>
+            <Button onClick={() =>
+              execute({executionSteps, terraContext, ethereumContext})}>
+              Execute
+            </Button>
+          </Box>
         )
       }
     </VStack>
