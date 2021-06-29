@@ -296,7 +296,7 @@ async function execute(
   const statuses: Status[] = [];
   for (let i = 0; i < executionSteps.length; i++) {
     const {network, args} = executionSteps[i];
-    const onProgress = (status: string) => {
+    const onProgress = (status: Status) => {
       statuses[i] = status;
       onStatusesChange(statuses);
     }
@@ -305,7 +305,7 @@ async function execute(
         await TerraRun(args, {terraContext, onProgress});
         onProgress('Waiting for transaction on Eth side');
         await EthWaitForShuttle({ethereumContext, terraContext});
-        // Wait for this to be done and show spinner
+        onProgress(null);
         break;
       case 'eth':
         EthereumRun(args, {ethereumContext});
