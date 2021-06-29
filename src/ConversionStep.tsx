@@ -25,6 +25,7 @@ import {
 import {EthereumContext, EthereumContextProps} from "./EthWalletConnector";
 import {TerraContext, TerraContextProps} from "./WalletConnector";
 import {TerraToEth, Run as TerraRun, RunArg as TerraRunArg} from "./operations/terra";
+import {EthToTerra, Run as EthereumRun, RunArg as EthereumRunArg} from "./operations/ethereum";
 
 type Currency = {
   network: 'eth' | 'terra' | 'bsc',
@@ -197,7 +198,7 @@ type estimateArg = {
 
 type Step = {
   network: 'eth' | 'terra' | 'bsc',
-  args: TerraRunArg,
+  args: TerraRunArg | any,
   info: {},
 };
 
@@ -227,9 +228,19 @@ async function estimateStep(
       info: estTx,
     };
   } else if (input.network === 'eth' && output.network === 'terra') {
+    if (!input.amount) {
+      throw new Error('No input amount');
+    }
     // To Shuttle
+    const estTx = await EthToTerra(input.amount, {terraContext, ethereumContext});
+    return {
+      network: 'eth',
+      args: estTx,
+      info: estTx,
+    }
   } else if (input.network === 'eth' && output.network === 'eth') {
     // 1inch route
+
   }
 
   throw new Error(
@@ -249,6 +260,9 @@ async function execute(
     switch (network) {
       case 'terra':
         TerraRun(args, {terraContext});
+        break;
+      case 'eth':
+        EthereumRun(args, {ethereumContext});
         break;
     }
 
