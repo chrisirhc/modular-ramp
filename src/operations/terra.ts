@@ -1,9 +1,9 @@
 import { LCDClient, Extension, Coin, Coins, Dec, MsgSend, StdFee, CreateTxOptions, Int } from "@terra-money/terra.js";
+import { EthereumContextProps } from "../EthWalletConnector";
 import { getLCDClient, printTerraAmount, TERRA_DECIMAL } from "../utils";
 import {TerraContextProps} from "../WalletConnector";
 
 const ETH_TARGET_NETWORK = 'ropsten';
-const ETH_DEST_ADDRESS = '0x88fc7C092aFF64bf5319e9F1Ab2D9DDC5f854449';
 
 // Grab from https://github.com/terra-money/shuttle/blob/main/TERRA_ASSET.md#usage-instructions
 const SHUTTLE_TO_TERRA_ADDRESS = {
@@ -21,11 +21,15 @@ export interface EstTx {
 
 export async function TerraToEth(
   uusdDec: string,
-  {terraContext}: {terraContext: TerraContextProps}
+  {ethereumContext, terraContext}: 
+    {ethereumContext: EthereumContextProps, terraContext: TerraContextProps}
 ): Promise<EstTx> {
   const {address} = terraContext;
   if (!address) {
     throw new Error('No address found.');
+  }
+  if (!ethereumContext.publicAddress) {
+    throw new Error('No Ethereum address found.');
   }
 
   const amountToConvert = new Coin('uusd', new Dec(uusdDec).mul(TERRA_DECIMAL).toInt());
@@ -42,7 +46,7 @@ export async function TerraToEth(
   const gasPriceInUusd = 0.15; // in uusd. TODO: This can change and should be retrieved from lcd.
   const estTxOptions: CreateTxOptions = {
     msgs: [msg],
-    memo: ETH_DEST_ADDRESS,
+    memo: ethereumContext.publicAddress,
     gasPrices: new Coins({uusd: gasPriceInUusd}),
   };
   // Fee calculation is a PITA

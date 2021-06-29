@@ -221,7 +221,7 @@ async function estimateStep(
     if (!input.amount) {
       throw new Error('No input amount');
     }
-    const estTx = await TerraToEth(input.amount, {terraContext});
+    const estTx = await TerraToEth(input.amount, {terraContext, ethereumContext});
     return {
       network: 'terra',
       args: estTx,
