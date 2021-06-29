@@ -4,6 +4,7 @@ import { ERC20_ABI } from "../erc20";
 import SHUTTLE_ABI from "../shuttle-abi";
 import { EthereumContextProps } from "../EthWalletConnector";
 import { TerraContextProps } from "../WalletConnector";
+import { waitFor } from "@testing-library/dom";
 
 const ETH_TARGET_NETWORK = 'ropsten';
 
@@ -29,6 +30,11 @@ type Tx = {
 };
 
 export type PrepTx = ShuttleBurnTx | Tx;
+
+type WalletContexts = {
+  ethereumContext: EthereumContextProps,
+  terraContext: TerraContextProps
+};
 
 /* bech32 */
 const decodeTerraAddressOnEtherBase = (address: string): string => {
@@ -110,4 +116,33 @@ async function shuttleBurn({
     throw error;
     // return handleTxErrorFromEtherBase(error)
   }
+}
+
+export async function waitForShuttle({ethereumContext}: WalletContexts) {
+  const {provider, publicAddress} = ethereumContext;
+  if (!publicAddress) {
+    throw new Error('No public address of ethereum wallet');
+  }
+  if (!provider) {
+    throw new Error('No provider');
+  }
+
+  return new Promise((resolve) => {
+    // Look for transfers to the target address
+    // Since it's bridged, this is minted (i.e. fromAddress=0x0).
+    const filter = {
+      address: UST_CONTRACT[ETH_TARGET_NETWORK],
+      topics: [
+          utils.id("Transfer(address,address,uint256)"),
+          utils.hexZeroPad('0x0', 32 /* length of these fields */),
+          utils.hexZeroPad(publicAddress, 32)
+      ]
+    };
+    provider.once(filter, (log, _) => {
+        const {data} = log;
+        const amountMinted = utils.formatEther(data);
+        const amountMintedBN = BigNumber.from(data);
+        resolve(amountMinted);
+    });
+  });
 }

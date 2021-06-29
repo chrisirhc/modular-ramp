@@ -89,13 +89,16 @@ export async function Run(estTx: EstTx, {
     return;
   }
 
-  extension.post({
-    ...estTx.estTx,
-    fee: estTx.estFees,
+  return new Promise((resolve) => {
+    extension.post({
+      ...estTx.estTx,
+      fee: estTx.estFees,
+    });
+    extension.once('onPost', payload => {
+      console.log(payload);
+      resolve(payload);
+      onProgress(`Trancation ID: ${payload.id}, Success: ${payload.success}`)
+    });
+    onProgress('Converting...');
   });
-  extension.once('onPost', payload => {
-    console.log(payload);
-    onProgress(`Trancation ID: ${payload.id}, Success: ${payload.success}`)
-  });
-  onProgress('Converting...');
 }

@@ -20,12 +20,13 @@ import {
   AccordionButton,
   AccordionPanel,
   AccordionIcon,
+  Spinner,
 } from "@chakra-ui/react";
 
 import {EthereumContext, EthereumContextProps} from "./EthWalletConnector";
 import {TerraContext, TerraContextProps} from "./WalletConnector";
 import {TerraToEth, Run as TerraRun, RunArg as TerraRunArg} from "./operations/terra";
-import {EthToTerra, Run as EthereumRun, RunArg as EthereumRunArg} from "./operations/ethereum";
+import {EthToTerra, Run as EthereumRun, RunArg as EthereumRunArg, waitForShuttle as EthWaitForShuttle} from "./operations/ethereum";
 import {estimate as OneInchEstimate} from "./operations/1inch";
 
 type Currency = {
@@ -40,15 +41,19 @@ type FirstStepProps = {
   // output, fees
 };
 
+type Status = string | null;
+
 type ConversionStepProps = {
   stepNumber: number,
   input: Currency,
   onChange: (output: Currency) => void,
+  status: Status,
   // output, fees
 };
 
 export function AllSteps() {
   const [steps, setSteps] = useState<Currency[]>([]);
+  const [statuses, setStatuses] = useState<Status[]>([]);
   return (
     <Box p={4} shadow="md" borderWidth="1px" borderRadius="md" m={5}>
       <VStack 
@@ -64,9 +69,11 @@ export function AllSteps() {
               ...steps.slice(0, i + 1),
               output,
               ...steps.slice(i + 2)
-            ])} />
+            ])}
+            status={statuses[i]}
+            />
         )) }
-        <TransactionSummary steps={steps} />
+        <TransactionSummary steps={steps} onStatusesChange={setStatuses} />
       </VStack>
     </Box>
   );
@@ -138,21 +145,28 @@ export function FirstStep({onChange}: FirstStepProps) {
   );
 }
 
-export function Step({stepNumber, input, onChange}: ConversionStepProps) {
+export function Step({stepNumber, input, onChange, status}: ConversionStepProps) {
   // Input is first step, it restricts output currency
   return (
     <Box>
       <Heading size="md">Step {stepNumber + 1}</Heading>
       <FirstStep onChange={onChange} />
+      { status ? (
+        <>
+          <Spinner />
+          { status }
+        </>
+      ) : null}
     </Box>
   );
 }
 
 type TransactionSummaryProps = {
   steps: Currency[],
+  onStatusesChange: (statuses: Status[]) => void,
 };
 
-function TransactionSummary({steps}: TransactionSummaryProps) {
+function TransactionSummary({steps, onStatusesChange}: TransactionSummaryProps) {
   const terraContext = useContext(TerraContext);
   const ethereumContext = useContext(EthereumContext);
   const [executionSteps, setExecutionSteps] = useState<Step[] | null>(null);
@@ -181,7 +195,7 @@ function TransactionSummary({steps}: TransactionSummaryProps) {
               </AccordionItem>
             </Accordion>
             <Button onClick={() =>
-              execute({executionSteps, terraContext, ethereumContext})}>
+              execute({executionSteps, terraContext, ethereumContext, onStatusesChange})}>
               Execute
             </Button>
           </Box>
@@ -274,19 +288,28 @@ type executeArg = {
   executionSteps: Step[],
   terraContext: TerraContextProps,
   ethereumContext: EthereumContextProps,
+  onStatusesChange: (statuses: Status[]) => void,
 };
 
 async function execute(
-  {executionSteps, terraContext, ethereumContext}: executeArg) {
-  executionSteps.forEach(({network, args}) => {
+  {executionSteps, terraContext, ethereumContext, onStatusesChange}: executeArg) {
+  const statuses: Status[] = [];
+  for (let i = 0; i < executionSteps.length; i++) {
+    const {network, args} = executionSteps[i];
+    const onProgress = (status: string) => {
+      statuses[i] = status;
+      onStatusesChange(statuses);
+    }
     switch (network) {
       case 'terra':
-        TerraRun(args, {terraContext});
+        await TerraRun(args, {terraContext, onProgress});
+        onProgress('Waiting for transaction on Eth side');
+        await EthWaitForShuttle({ethereumContext, terraContext});
+        // Wait for this to be done and show spinner
         break;
       case 'eth':
         EthereumRun(args, {ethereumContext});
         break;
     }
-
-  });
+  }
 }
