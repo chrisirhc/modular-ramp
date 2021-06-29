@@ -6,7 +6,6 @@ import { EthereumContextProps } from "../EthWalletConnector";
 import { TerraContextProps } from "../WalletConnector";
 
 const ETH_TARGET_NETWORK = 'ropsten';
-const ETH_DEST_ADDRESS = '0x88fc7C092aFF64bf5319e9F1Ab2D9DDC5f854449';
 
 // From https://github.com/terra-money/shuttle/blob/main/TERRA_ASSET.md#erc20-contracts
 export const UST_CONTRACT = {
@@ -71,7 +70,7 @@ export async function Run(estTx: PrepTx, {
     if (!ethereumContext.signer) {
       throw new Error('Missing signer');
     }
-    return ethereumContext.signer.signTransaction(estTx.txArg);
+    return ethereumContext.signer.sendTransaction(estTx.txArg);
   }
 
   if (estTx.type === 'shuttleBurn') {

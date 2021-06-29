@@ -26,6 +26,7 @@ import {EthereumContext, EthereumContextProps} from "./EthWalletConnector";
 import {TerraContext, TerraContextProps} from "./WalletConnector";
 import {TerraToEth, Run as TerraRun, RunArg as TerraRunArg} from "./operations/terra";
 import {EthToTerra, Run as EthereumRun, RunArg as EthereumRunArg} from "./operations/ethereum";
+import {estimate as OneInchEstimate} from "./operations/1inch";
 
 type Currency = {
   network: 'eth' | 'terra' | 'bsc',
@@ -239,8 +240,29 @@ async function estimateStep(
       info: estTx,
     }
   } else if (input.network === 'eth' && output.network === 'eth') {
-    // 1inch route
+    if (!input.amount) {
+      throw new Error('No input amount');
+    }
+    const {currency: inputCurrency} = input;
+    const {currency: outputCurrency} = output;
+    if (!inputCurrency || !outputCurrency) {
+      throw new Error('No specified input/output currencies');
+    }
 
+    // 1inch route
+    const ret = await OneInchEstimate(
+      {
+        amountString: input.amount,
+        inputCurrency,
+        outputCurrency,
+      },
+      {ethereumContext}
+    );
+    return {
+      network: 'eth',
+      args: ret.args,
+      info: ret.info,
+    };
   }
 
   throw new Error(
