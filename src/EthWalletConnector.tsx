@@ -1,5 +1,6 @@
 import React, { createContext, useEffect, useRef, useState } from "react";
 import {
+  Box,
   Button,
 } from "@chakra-ui/react";
 
@@ -42,6 +43,8 @@ function printBalance(bal: Balance | null) {
   return bal && utils.formatUnits(bal.balance, bal.decimals) || '';
 }
 
+const CONNECTED_KEY = 'eth_connected';
+
 export function EthWalletConnector({children}: Props) {
   const [publicAddress, setPublicAddress] = useState<string | null>(null);
   const [USTBalance, setUSTBalance] = useState<Balance | null>(null);
@@ -50,12 +53,15 @@ export function EthWalletConnector({children}: Props) {
     signer: ethers.providers.JsonRpcSigner | null,
   } | null>(null);
 
+  useEffect(() => {
+    if (sessionStorage.getItem(CONNECTED_KEY) === CONNECTED_KEY) {
+      connect();
+    }
+  }, []);
+
   return (
-    <div>
-      <div style={{
-        border: '1px solid #ccc',
-        padding: '5px',
-      }}>
+    <>
+      <Box>
         <h3>Ethereum</h3>
         <Button onClick={connect} disabled={Boolean(publicAddress)}>
           {publicAddress ? `Connected to ${publicAddress}` : 'Connect'}
@@ -68,7 +74,7 @@ export function EthWalletConnector({children}: Props) {
             </div>
           ) : null
         }
-      </div>
+      </Box>
       <EthereumContext.Provider value={{
         /* useMemo */
         USTBalance,
@@ -78,7 +84,7 @@ export function EthWalletConnector({children}: Props) {
       }}>
         {children}
       </EthereumContext.Provider>
-    </div>
+    </>
   );
 
   async function connect() {
@@ -99,5 +105,7 @@ export function EthWalletConnector({children}: Props) {
     const decimals = await erc20.decimals();
     const symbol = await erc20.symbol();
     setUSTBalance({balance, decimals, symbol});
+
+    sessionStorage.setItem(CONNECTED_KEY, CONNECTED_KEY);
   }
 }

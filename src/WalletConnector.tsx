@@ -1,5 +1,6 @@
 import React, { createContext, useEffect, useRef, useState } from "react";
 import {
+  Box,
   Button,
 } from "@chakra-ui/react";
 
@@ -24,10 +25,20 @@ type Props = {
   children: React.ReactNode,
 };
 
+const CONNECTED_KEY = 'terra_connected';
+
 export function WalletConnector({children}: Props) {
   const [extension, setExtension] = useState<Extension | null>(null);
   const [wallet, setWallet] = useState<string | null>(null);
   const [balance, setBalance] = useState<Coins | null>(null);
+
+  // Helps with refreshes and development
+  useEffect(() => {
+    if (sessionStorage.getItem(CONNECTED_KEY) === CONNECTED_KEY) {
+      connect();
+    }
+  }, []);
+
   useEffect(() => {
     refreshBalance()
   }, [wallet]);
@@ -35,11 +46,8 @@ export function WalletConnector({children}: Props) {
   const uusdBal = balance && balance.get("uusd");
 
   return (
-    <div>
-      <div style={{
-        border: '1px solid #ccc',
-        padding: '5px',
-      }}>
+    <>
+      <Box p={2}>
         <h3>Terra</h3>
         <Button onClick={connect} disabled={Boolean(wallet)}>
           {
@@ -56,7 +64,7 @@ export function WalletConnector({children}: Props) {
             </div>
           ) : null
         }
-      </div>
+      </Box>
       <TerraContext.Provider value={{
         /* TODO: Use Memo */
         extension,
@@ -66,7 +74,7 @@ export function WalletConnector({children}: Props) {
       }}>
         {children}
       </TerraContext.Provider>
-    </div>
+    </>
   );
 
   type ConnectResponse = {
@@ -80,6 +88,7 @@ export function WalletConnector({children}: Props) {
       setWallet(w.address);
     });
     setExtension(extension);
+    sessionStorage.setItem(CONNECTED_KEY, CONNECTED_KEY);
   }
 
   async function refreshBalance() {
