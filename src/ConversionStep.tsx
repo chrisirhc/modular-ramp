@@ -25,7 +25,7 @@ import {
 
 import {EthereumContext, EthereumContextProps} from "./EthWalletConnector";
 import {TerraContext, TerraContextProps} from "./WalletConnector";
-import {TerraToEth, Run as TerraRun, RunArg as TerraRunArg} from "./operations/terra";
+import {TerraToEth, Run as TerraRun, RunArg as TerraRunArg, WaitForBalanceChange} from "./operations/terra";
 import {EthToTerra, Run as EthereumRun, RunArg as EthereumRunArg, waitForShuttle as EthWaitForShuttle} from "./operations/ethereum";
 import {estimate as OneInchEstimate} from "./operations/1inch";
 
@@ -37,6 +37,7 @@ type Currency = {
 };
 
 type FirstStepProps = {
+  input?: Currency,
   onChange: (output: Currency) => void,
   // output, fees
 };
@@ -79,7 +80,7 @@ export function AllSteps() {
   );
 }
 
-export function FirstStep({onChange}: FirstStepProps) {
+export function FirstStep({input, onChange}: FirstStepProps) {
   const [network, setNetwork] = useState<string | null>(null);
   const [currency, setCurrency] = useState<string | null>(null);
   const amountInputRef = useRef<HTMLInputElement>(null);
@@ -94,17 +95,21 @@ export function FirstStep({onChange}: FirstStepProps) {
             onChange={(event) => setNetwork(event.target.value)}>
             <option>eth</option>
             <option>terra</option>
-            <option>bsc</option>
+            {/* <option>bsc</option> */}
           </Select>
         </FormControl>
-        <FormControl>
-          <FormLabel>Currency</FormLabel>
-          <Select placeholder="Select currency"
-            onChange={(event) => setCurrency(event.target.value)}>
-            <option>UST</option>
-            <option>USDC</option>
-          </Select>
-        </FormControl>
+        {
+          input?.network !== 'terra' ? (
+            <FormControl>
+              <FormLabel>Currency</FormLabel>
+              <Select placeholder="Select currency"
+                onChange={(event) => setCurrency(event.target.value)}>
+                <option>UST</option>
+                <option>USDC</option>
+              </Select>
+            </FormControl>
+          ) : null
+        }
       </HStack>
       <FormControl>
         <FormLabel>Amount</FormLabel>
@@ -114,6 +119,7 @@ export function FirstStep({onChange}: FirstStepProps) {
             type="number"
             pr="4.5rem"
             ref={amountInputRef}
+            min="0"
             />
           <InputRightElement
             pointerEvents="none"
@@ -150,7 +156,7 @@ export function Step({stepNumber, input, onChange, status}: ConversionStepProps)
   return (
     <Box>
       <Heading size="md">Step {stepNumber + 1}</Heading>
-      <FirstStep onChange={onChange} />
+      <FirstStep input={input} onChange={onChange} />
       { status ? (
         <>
           <Spinner />
@@ -166,7 +172,7 @@ type TransactionSummaryProps = {
   onStatusesChange: (statuses: Status[]) => void,
 };
 
-function TransactionSummary({steps, onStatusesChange}: TransactionSummaryProps) {
+export function TransactionSummary({steps, onStatusesChange}: TransactionSummaryProps) {
   const terraContext = useContext(TerraContext);
   const ethereumContext = useContext(EthereumContext);
   const [executionSteps, setExecutionSteps] = useState<Step[] | null>(null);
@@ -195,7 +201,7 @@ function TransactionSummary({steps, onStatusesChange}: TransactionSummaryProps) 
               </AccordionItem>
             </Accordion>
             <Button onClick={() =>
-              execute({executionSteps, terraContext, ethereumContext, onStatusesChange})}>
+              execute({executionSteps, steps, terraContext, ethereumContext, onStatusesChange})}>
               Execute
             </Button>
           </Box>
@@ -212,8 +218,12 @@ type estimateArg = {
 };
 
 type Step = {
-  network: 'eth' | 'terra' | 'bsc',
-  args: TerraRunArg | any,
+  network: 'eth',
+  args: EthereumRunArg,
+  info: {},
+} | {
+  network: 'terra',
+  args: TerraRunArg,
   info: {},
 };
 
@@ -286,30 +296,36 @@ async function estimateStep(
 
 type executeArg = {
   executionSteps: Step[],
+  steps: Currency[],
   terraContext: TerraContextProps,
   ethereumContext: EthereumContextProps,
   onStatusesChange: (statuses: Status[]) => void,
 };
 
 async function execute(
-  {executionSteps, terraContext, ethereumContext, onStatusesChange}: executeArg) {
+  {executionSteps, steps, terraContext, ethereumContext, onStatusesChange}: executeArg) {
   const statuses: Status[] = [];
   for (let i = 0; i < executionSteps.length; i++) {
-    const {network, args} = executionSteps[i];
+    const step = executionSteps[i];
     const onProgress = (status: Status) => {
       statuses[i] = status;
       onStatusesChange(statuses);
     }
-    switch (network) {
+    onProgress('Initiating step...');
+    switch (step.network) {
       case 'terra':
-        await TerraRun(args, {terraContext, onProgress});
+        await TerraRun(step.args, {terraContext, onProgress});
         onProgress('Waiting for transaction on Eth side');
         await EthWaitForShuttle({ethereumContext, terraContext});
-        onProgress(null);
         break;
       case 'eth':
-        EthereumRun(args, {ethereumContext});
+        await EthereumRun(step.args, {ethereumContext});
+        if (steps[i+1].network === 'terra') {
+          onProgress('Waiting for transaction on Terra side');
+          await WaitForBalanceChange({terraContext, ethereumContext});
+        }
         break;
     }
+    onProgress(null);
   }
 }
