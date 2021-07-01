@@ -4,7 +4,6 @@ import { ERC20_ABI } from "../erc20";
 import SHUTTLE_ABI from "../shuttle-abi";
 import { EthereumContextProps } from "../EthWalletConnector";
 import { TerraContextProps } from "../WalletConnector";
-import { waitFor } from "@testing-library/dom";
 
 const ETH_TARGET_NETWORK = 'ropsten';
 
