@@ -7,11 +7,17 @@ import {
 import { Extension, Coin, Coins, Dec, MsgSend, StdFee, CreateTxOptions, Int } from "@terra-money/terra.js";
 import { getLCDClient, TERRA_DECIMAL, printTerraAmount } from "./utils";
 
+// Return true if the balance has changed
+export type RefreshBalanceRet = {
+  balanceHasChanged: boolean,
+};
+export type RefreshBalanceFn = (() => Promise<RefreshBalanceRet>) | (() => void);
+
 export type TerraContextProps = {
   extension: Extension | null,
   address: string | null,
   balance: Coins | null,
-  refreshBalance: Function,
+  refreshBalance: RefreshBalanceFn,
 };
 
 export const TerraContext = createContext<TerraContextProps>({
@@ -91,11 +97,17 @@ export function WalletConnector({children}: Props) {
     sessionStorage.setItem(CONNECTED_KEY, CONNECTED_KEY);
   }
 
-  async function refreshBalance() {
+  async function refreshBalance(): Promise<RefreshBalanceRet | void> {
     if (!wallet) {
       return;
     }
-    const balance = await getLCDClient().bank.balance(wallet);
-    setBalance(balance);
+    const newBalance = await getLCDClient().bank.balance(wallet);
+    const balanceHasChanged = balance?.toJSON() !== newBalance.toJSON();
+    if (balanceHasChanged) {
+      setBalance(newBalance);
+    }
+    return {
+      balanceHasChanged,
+    };
   }
 }
