@@ -1,7 +1,8 @@
 import { LCDClient, Extension, Coin, Coins, Dec, MsgSend, StdFee, CreateTxOptions, Int } from "@terra-money/terra.js";
 import { EthereumContextProps } from "../EthWalletConnector";
 import { getLCDClient, printTerraAmount, TERRA_DECIMAL } from "../utils";
-import {TerraContextProps} from "../WalletConnector";
+import { RefreshBalanceFn, RefreshBalanceRet, TerraContextProps } from "../WalletConnector";
+import { WalletContexts } from "../types";
 
 const ETH_TARGET_NETWORK = 'ropsten';
 
@@ -13,6 +14,7 @@ const SHUTTLE_TO_TERRA_ADDRESS = {
 const MIN_FEE = new Coin('uusd', new Int(1 * TERRA_DECIMAL));
 
 export interface EstTx {
+  network: 'terra',
   amount: Coin,
   estTx: CreateTxOptions,
   estFees: StdFee,
@@ -68,6 +70,7 @@ export async function TerraToEth(
   const fullFee = new StdFee(estimatedFee.gas, [estFee]);
 
   return {
+    network: 'terra',
     amount: amountToConvert,
     estTx: estTxOptions,
     estFees: fullFee,
@@ -101,4 +104,20 @@ export async function Run(estTx: EstTx, {
     });
     onProgress('Converting...');
   });
+}
+
+async function sleep(waitMs: number) {
+  return new Promise(resolve => {
+    setTimeout(resolve, waitMs)
+  });
+}
+
+export async function WaitForBalanceChange({terraContext}: WalletContexts) {
+  let ret: RefreshBalanceRet | void;
+  while (!ret?.balanceHasChanged) {
+    // Exponential backoff
+    await sleep(5000);
+    ret = await terraContext.refreshBalance();
+  }
+  return;
 }
