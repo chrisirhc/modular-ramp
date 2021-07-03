@@ -25,7 +25,6 @@ import {
   AccordionItem,
   AccordionButton,
   AccordionPanel,
-  AccordionIcon,
   Spinner,
   useColorModeValue,
 } from "@chakra-ui/react";
@@ -60,19 +59,22 @@ class Currency {
   // there's some fees involved
 }
 
-interface FirstStepProps {
+interface StepFormProps {
   input?: Currency;
   output: Currency;
   onChange: (output: Currency) => void;
   onAddStep: () => void;
+  onRemoveStep?: () => void;
   // output, fees
 }
 
 type Status = string | null;
 
-interface ConversionStepProps extends FirstStepProps {
+interface ConversionStepProps extends StepFormProps {
+  input: Currency;
   stepNumber: number;
   status: Status;
+  onRemoveStep: () => void;
   // output, fees
 }
 
@@ -85,10 +87,16 @@ export function AllSteps() {
         {steps.map((step, i) =>
           i === 0 ? (
             <Box>
-              <FirstStep
+              <StepForm
                 output={step}
                 onChange={(output) => setSteps([output, ...steps.slice(1)])}
-                onAddStep={() => setSteps([...steps, new Currency()])}
+                onAddStep={() =>
+                  setSteps([
+                    ...steps.slice(0, i + 1),
+                    new Currency(),
+                    ...steps.slice(i + 1),
+                  ])
+                }
               />
             </Box>
           ) : (
@@ -100,8 +108,17 @@ export function AllSteps() {
               onChange={(output) =>
                 setSteps([...steps.slice(0, i), output, ...steps.slice(i + 1)])
               }
-              onAddStep={() => setSteps([...steps, new Currency()])}
-              status={statuses[i]}
+              onAddStep={() =>
+                setSteps([
+                  ...steps.slice(0, i),
+                  new Currency(),
+                  ...steps.slice(i),
+                ])
+              }
+              onRemoveStep={() =>
+                setSteps([...steps.slice(0, i), ...steps.slice(i + 1)])
+              }
+              status={statuses[i - 1]}
             />
           )
         )}
@@ -111,14 +128,13 @@ export function AllSteps() {
   );
 }
 
-export function FirstStep({
+export function StepForm({
   input,
   output,
   onChange,
   onAddStep,
-}: FirstStepProps) {
-  const amountInputRef = useRef<HTMLInputElement>(null);
-
+  onRemoveStep,
+}: StepFormProps) {
   const setNetwork = (network: Network) => {
     onChange({
       ...output,
@@ -148,7 +164,7 @@ export function FirstStep({
           <FormLabel>Network</FormLabel>
           <Select
             placeholder="Select network"
-            value={output.network || undefined}
+            value={output.network || ""}
             onChange={(event) => setNetwork(event.target.value as Network)}
           >
             {NETWORK_OPTIONS.map((networkOption) => (
@@ -177,7 +193,7 @@ export function FirstStep({
             type="number"
             pr="4.5rem"
             min="0"
-            value={output.amount || undefined}
+            value={output.amount || ""}
             onChange={(event) => setAmount(event.target.value)}
           />
           <InputRightElement
@@ -189,9 +205,12 @@ export function FirstStep({
           />
         </InputGroup>
       </FormControl>
-      <Button mt={5} onClick={onAddStep}>
-        Add Step
-      </Button>
+      <HStack mt={5}>
+        <Button onClick={onAddStep}>Add Step</Button>
+        {onRemoveStep ? (
+          <Button onClick={onRemoveStep}>Remove Step</Button>
+        ) : null}
+      </HStack>
     </>
   );
 }
@@ -202,16 +221,34 @@ export function Step({
   output,
   onChange,
   onAddStep,
+  onRemoveStep,
   status,
 }: ConversionStepProps) {
-  // Input is first step, it restricts output currency
+  const [stepName, setStepName] = useState("");
+
+  useEffect(() => {
+    if (!input.network || !output.network) {
+      return;
+    }
+    switch (true) {
+      case input.network !== output.network:
+        setStepName(
+          `Bridge ${NETWORKS[input.network]} to ${NETWORKS[output.network]}`
+        );
+        break;
+      default:
+        setStepName(`Step  ${stepNumber + 1}`);
+    }
+  }, [input, output, stepNumber]);
+
   return (
     <Box>
-      <Heading size="md">Step {stepNumber + 1}</Heading>
-      <FirstStep
+      <Heading size="md">{stepName}</Heading>
+      <StepForm
         input={input}
         output={output}
         onAddStep={onAddStep}
+        onRemoveStep={onRemoveStep}
         onChange={onChange}
       />
       {status ? (
