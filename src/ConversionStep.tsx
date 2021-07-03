@@ -319,6 +319,10 @@ async function execute(
         await EthWaitForShuttle({ethereumContext, terraContext});
         break;
       case 'eth':
+        if (steps[i+1].network === 'terra') {
+          onProgress('Preparing for transaction...');
+          await terraContext.refreshBalance();
+        }
         await EthereumRun(step.args, {ethereumContext});
         if (steps[i+1].network === 'terra') {
           onProgress('Waiting for transaction on Terra side');

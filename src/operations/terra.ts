@@ -115,9 +115,11 @@ async function sleep(waitMs: number) {
 export async function WaitForBalanceChange({terraContext}: WalletContexts) {
   let ret: RefreshBalanceRet | void;
   while (!ret?.balanceHasChanged) {
-    // Exponential backoff
+    // TODO: Exponential backoff?
+    console.debug('Waiting, no change');
     await sleep(5000);
     ret = await terraContext.refreshBalance();
   }
+  console.debug('Done waiting')
   return;
 }
