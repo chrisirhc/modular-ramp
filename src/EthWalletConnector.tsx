@@ -50,7 +50,8 @@ export function EthWalletConnector({ onChange }: Props) {
     provider: ethers.providers.Web3Provider | null;
     signer: ethers.providers.JsonRpcSigner | null;
   } | null>(null);
-  const [shouldRefreshBalance, setShouldRefreshBalance] = useState<boolean>(true);
+  const [shouldRefreshBalance, setShouldRefreshBalance] =
+    useState<boolean>(true);
 
   useEffect(() => {
     if (sessionStorage.getItem(CONNECTED_KEY) === CONNECTED_KEY) {
@@ -62,7 +63,12 @@ export function EthWalletConnector({ onChange }: Props) {
     let canceled = false;
 
     (async () => {
-      if (!providerAndSigner || !providerAndSigner?.provider || !publicAddress || !shouldRefreshBalance) {
+      if (
+        !providerAndSigner ||
+        !providerAndSigner?.provider ||
+        !publicAddress ||
+        !shouldRefreshBalance
+      ) {
         return;
       }
 
@@ -84,7 +90,7 @@ export function EthWalletConnector({ onChange }: Props) {
 
     return () => {
       canceled = true;
-    }
+    };
   }, [providerAndSigner, publicAddress, shouldRefreshBalance]);
 
   useEffect(() => {
@@ -98,18 +104,20 @@ export function EthWalletConnector({ onChange }: Props) {
   }, [onChange, USTBalance, publicAddress, providerAndSigner]);
 
   return (
-    <Box>
+    <Box flex="1">
       <Button onClick={connect} disabled={Boolean(publicAddress)}>
         {publicAddress ? `Connected` : "Connect"} to Ethereum
       </Button>
-      <small>
-      {publicAddress}
-      {USTBalance ? (
-        <div>
-          <pre>{printBalance(USTBalance)} UST</pre>
-        </div>
-      ) : null}
-      </small>
+      <Box ps={2}>
+        <small>
+          {publicAddress}
+          {USTBalance ? (
+            <div>
+              <pre>{printBalance(USTBalance)} UST</pre>
+            </div>
+          ) : null}
+        </small>
+      </Box>
     </Box>
   );
 
