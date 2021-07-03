@@ -10,7 +10,7 @@ import {
   CreateTxOptions,
   Int,
 } from "@terra-money/terra.js";
-import { TerraContext } from "./WalletConnector";
+import { TerraContext } from "./TerraWalletConnector";
 import { TerraToEth, EstTx, Run } from "./operations/terra";
 import { getLCDClient, printTerraAmount, TERRA_DECIMAL } from "./utils";
 

@@ -2,7 +2,7 @@ import React, { useRef, useState, useContext } from "react";
 import { ethers, utils, BigNumber } from "ethers";
 import { ERC20_ABI } from "./erc20";
 import SHUTTLE_ABI from "./shuttle-abi";
-import { TerraContext } from "./WalletConnector";
+import { TerraContext } from "./TerraWalletConnector";
 import { EthereumContext } from "./EthWalletConnector";
 
 // Assume this is injected by Metamask

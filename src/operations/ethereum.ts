@@ -2,7 +2,7 @@ import { ethers, utils } from "ethers";
 import { bech32 } from "bech32";
 import SHUTTLE_ABI from "../shuttle-abi";
 import { EthereumContextProps } from "../EthWalletConnector";
-import { TerraContextProps } from "../WalletConnector";
+import { TerraContextProps } from "../TerraWalletConnector";
 
 const ETH_TARGET_NETWORK = "ropsten";
 

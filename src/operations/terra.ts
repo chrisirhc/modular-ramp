@@ -9,7 +9,7 @@ import {
 } from "@terra-money/terra.js";
 import { EthereumContextProps } from "../EthWalletConnector";
 import { getLCDClient, TERRA_DECIMAL } from "../utils";
-import { RefreshBalanceRet, TerraContextProps } from "../WalletConnector";
+import { RefreshBalanceRet, TerraContextProps } from "../TerraWalletConnector";
 import { WalletContexts } from "../types";
 
 const ETH_TARGET_NETWORK = "ropsten";

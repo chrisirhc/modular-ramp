@@ -28,7 +28,7 @@ export const EthereumContext = createContext<EthereumContextProps>({
 });
 
 type Props = {
-  children: React.ReactNode;
+  onChange: (e: EthereumContextProps) => void;
 };
 
 type Balance = {
@@ -43,7 +43,7 @@ function printBalance(bal: Balance | null) {
 
 const CONNECTED_KEY = "eth_connected";
 
-export function EthWalletConnector({ children }: Props) {
+export function EthWalletConnector({ onChange }: Props) {
   const [publicAddress, setPublicAddress] = useState<string | null>(null);
   const [USTBalance, setUSTBalance] = useState<Balance | null>(null);
   const [providerAndSigner, setProviderAndSigner] = useState<{
@@ -87,33 +87,30 @@ export function EthWalletConnector({ children }: Props) {
     }
   }, [providerAndSigner, publicAddress, shouldRefreshBalance]);
 
+  useEffect(() => {
+    onChange({
+      USTBalance,
+      publicAddress,
+      provider: providerAndSigner?.provider || null,
+      signer: providerAndSigner?.signer || null,
+      refreshBalance,
+    });
+  }, [onChange, USTBalance, publicAddress, providerAndSigner]);
+
   return (
-    <>
-      <Box>
-        <h3>Ethereum</h3>
-        <Button onClick={connect} disabled={Boolean(publicAddress)}>
-          {publicAddress ? `Connected to ${publicAddress}` : "Connect"}
-        </Button>
-        {USTBalance ? (
-          <div>
-            UUSD balance
-            <pre>{printBalance(USTBalance)} UST</pre>
-          </div>
-        ) : null}
-      </Box>
-      <EthereumContext.Provider
-        value={{
-          /* useMemo */
-          USTBalance,
-          publicAddress,
-          provider: providerAndSigner?.provider || null,
-          signer: providerAndSigner?.signer || null,
-          refreshBalance,
-        }}
-      >
-        {children}
-      </EthereumContext.Provider>
-    </>
+    <Box>
+      <Button onClick={connect} disabled={Boolean(publicAddress)}>
+        {publicAddress ? `Connected` : "Connect"} to Ethereum
+      </Button>
+      <small>
+      {publicAddress}
+      {USTBalance ? (
+        <div>
+          <pre>{printBalance(USTBalance)} UST</pre>
+        </div>
+      ) : null}
+      </small>
+    </Box>
   );
 
   async function connect() {

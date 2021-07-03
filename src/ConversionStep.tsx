@@ -30,7 +30,7 @@ import {
 } from "@chakra-ui/react";
 
 import { EthereumContext, EthereumContextProps } from "./EthWalletConnector";
-import { TerraContext, TerraContextProps } from "./WalletConnector";
+import { TerraContext, TerraContextProps } from "./TerraWalletConnector";
 import {
   TerraToEth,
   Run as TerraRun,
