@@ -35,7 +35,7 @@ type WalletContexts = {
 };
 
 /* bech32 */
-const decodeTerraAddressOnEtherBase = (address: string): string => {
+export const decodeTerraAddressOnEtherBase = (address: string): string => {
   try {
     const { words } = bech32.decode(address);
     const data = bech32.fromWords(words);
@@ -80,9 +80,9 @@ export async function Run(
     if (!ethereumContext.signer) {
       throw new Error("Missing signer");
     }
-    onProgress('Initiating transaction...');
+    onProgress("Initiating transaction...");
     const ret = await ethereumContext.signer.sendTransaction(estTx.txArg);
-    onProgress('Transaction successful');
+    onProgress("Transaction successful");
     return ret;
   }
 
@@ -102,10 +102,10 @@ async function shuttleBurn(
     toAddress: string | null | undefined;
     ustAmount: string | undefined;
   },
-  { 
+  {
     onProgress = () => {},
-    ethereumContext
-  }: { 
+    ethereumContext,
+  }: {
     onProgress?: (status: string) => void;
     ethereumContext: EthereumContextProps;
   }
@@ -129,9 +129,9 @@ async function shuttleBurn(
   const sendAmount = utils.parseUnits(ustAmount, UST_ERC20_DECIMALS);
   try {
     const tx = shuttleContract.burn(sendAmount, decoded.padEnd(66, "0"));
-    onProgress('Initiating transaction...');
+    onProgress("Initiating transaction...");
     const { hash } = await tx;
-    onProgress('Transaction successful.');
+    onProgress("Transaction successful.");
     return { success: true, hash };
   } catch (error) {
     throw error;
