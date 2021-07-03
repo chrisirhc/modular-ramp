@@ -1,13 +1,21 @@
 import React, { createContext, useEffect, useRef, useState } from "react";
 import { Box, Button, HStack } from "@chakra-ui/react";
-import {EthWalletConnector, EthereumContext, EthereumContextProps} from "./EthWalletConnector";
-import {TerraWalletConnector, TerraContext, TerraContextProps} from "./TerraWalletConnector";
+import {
+  EthWalletConnector,
+  EthereumContext,
+  EthereumContextProps,
+} from "./EthWalletConnector";
+import {
+  TerraWalletConnector,
+  TerraContext,
+  TerraContextProps,
+} from "./TerraWalletConnector";
 
 type Props = {
   children: React.ReactNode;
 };
 
-export function WalletConnector({children}: Props) {
+export function WalletConnector({ children }: Props) {
   const [terraContext, setTerraContext] = useState<TerraContextProps>({
     extension: null,
     address: null,
