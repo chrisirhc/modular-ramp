@@ -102,7 +102,7 @@ export async function Run(estTx: EstTx, {
       resolve(payload);
       onProgress(`Trancation ID: ${payload.id}, Success: ${payload.success}`)
     });
-    onProgress('Converting...');
+    onProgress('Posting transaction...');
   });
 }
 

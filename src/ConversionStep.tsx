@@ -321,10 +321,14 @@ async function execute(
       case 'eth':
         if (steps[i+1].network === 'terra') {
           onProgress('Preparing for transaction...');
+          // Get a snapshot of the current balance. So that we can watch for balance changes
+          // if coins were bridged.
           await terraContext.refreshBalance();
         }
         await EthereumRun(step.args, {ethereumContext});
         if (steps[i+1].network === 'terra') {
+          // This is naive and just watches for any changes in the balance.
+          // This doesn't watch for changes in CW20 coins, only native coins.
           onProgress('Waiting for transaction on Terra side');
           await WaitForBalanceChange({terraContext, ethereumContext});
         }
