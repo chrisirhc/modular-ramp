@@ -1,23 +1,31 @@
 import React, { createContext, useEffect, useRef, useState } from "react";
-import {
-  Box,
-  Button,
-} from "@chakra-ui/react";
+import { Box, Button } from "@chakra-ui/react";
 
-import { Extension, Coin, Coins, Dec, MsgSend, StdFee, CreateTxOptions, Int } from "@terra-money/terra.js";
+import {
+  Extension,
+  Coin,
+  Coins,
+  Dec,
+  MsgSend,
+  StdFee,
+  CreateTxOptions,
+  Int,
+} from "@terra-money/terra.js";
 import { getLCDClient, TERRA_DECIMAL, printTerraAmount } from "./utils";
 
 // Return true if the balance has changed
 export type RefreshBalanceRet = {
-  balanceHasChanged: boolean,
+  balanceHasChanged: boolean;
 };
-export type RefreshBalanceFn = (() => Promise<RefreshBalanceRet>) | (() => void);
+export type RefreshBalanceFn =
+  | (() => Promise<RefreshBalanceRet>)
+  | (() => void);
 
 export type TerraContextProps = {
-  extension: Extension | null,
-  address: string | null,
-  balance: Coins | null,
-  refreshBalance: RefreshBalanceFn,
+  extension: Extension | null;
+  address: string | null;
+  balance: Coins | null;
+  refreshBalance: RefreshBalanceFn;
 };
 
 export const TerraContext = createContext<TerraContextProps>({
@@ -28,18 +36,21 @@ export const TerraContext = createContext<TerraContextProps>({
 });
 
 type Props = {
-  children: React.ReactNode,
+  children: React.ReactNode;
 };
 
-const CONNECTED_KEY = 'terra_connected';
+const CONNECTED_KEY = "terra_connected";
 
-type ShouldRefreshBalanceType = {resolve: (ret: RefreshBalanceRet | Promise<RefreshBalanceRet>) => void};
+type ShouldRefreshBalanceType = {
+  resolve: (ret: RefreshBalanceRet | Promise<RefreshBalanceRet>) => void;
+};
 
-export function WalletConnector({children}: Props) {
+export function WalletConnector({ children }: Props) {
   const [extension, setExtension] = useState<Extension | null>(null);
   const [wallet, setWallet] = useState<string | null>(null);
   const [balance, setBalance] = useState<Coins | null>(null);
-  const [shouldRefreshBalance, setShouldRefreshBalance] = useState<null | ShouldRefreshBalanceType>(null);
+  const [shouldRefreshBalance, setShouldRefreshBalance] =
+    useState<null | ShouldRefreshBalanceType>(null);
 
   // Helps with refreshes and development
   useEffect(() => {
@@ -49,7 +60,7 @@ export function WalletConnector({children}: Props) {
   }, []);
 
   useEffect(() => {
-    refreshBalance()
+    refreshBalance();
   }, [wallet]);
 
   // Use state to set up a refreshing state
@@ -95,41 +106,37 @@ export function WalletConnector({children}: Props) {
       <Box p={2}>
         <h3>Terra</h3>
         <Button onClick={connect} disabled={Boolean(wallet)}>
-          {
-            wallet ?
-            `Connected to ${wallet}` :
-            'Connect to Terra Station'
-          }
+          {wallet ? `Connected to ${wallet}` : "Connect to Terra Station"}
         </Button>
-        {
-          uusdBal ? (
-            <div>
-              UUSD balance
-              <pre>{ printTerraAmount(uusdBal) } UST</pre>
-            </div>
-          ) : null
-        }
+        {uusdBal ? (
+          <div>
+            UUSD balance
+            <pre>{printTerraAmount(uusdBal)} UST</pre>
+          </div>
+        ) : null}
       </Box>
-      <TerraContext.Provider value={{
-        /* TODO: Use Memo */
-        extension,
-        address: wallet,
-        balance,
-        refreshBalance,
-      }}>
+      <TerraContext.Provider
+        value={{
+          /* TODO: Use Memo */
+          extension,
+          address: wallet,
+          balance,
+          refreshBalance,
+        }}
+      >
         {children}
       </TerraContext.Provider>
     </>
   );
 
   type ConnectResponse = {
-    address: string,
+    address: string;
   };
 
   function connect() {
     const extension = new Extension();
     extension.connect();
-    extension.on('onConnect', (w: ConnectResponse) => {
+    extension.on("onConnect", (w: ConnectResponse) => {
       setWallet(w.address);
     });
     setExtension(extension);
@@ -140,7 +147,7 @@ export function WalletConnector({children}: Props) {
    * Be careful with referencing state within this function.
    * The function is used elsewhere and needs to always get the latest
    * values. Hence, the use of getters and useRef to store state.
-   * 
+   *
    * There might be cleaner patterns for doing this.
    * TODO: in the future.
    */

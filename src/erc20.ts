@@ -9,7 +9,7 @@ export const ERC20_ABI = [
   "function transfer(address to, uint amount) returns (boolean)",
 
   // Events
-  "event Transfer(address indexed from, address indexed to, uint amount)"
+  "event Transfer(address indexed from, address indexed to, uint amount)",
 ];
 
 // // This can be an address or an ENS name

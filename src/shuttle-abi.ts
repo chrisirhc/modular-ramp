@@ -20,7 +20,7 @@ const ABI = [
   "function getReward() external",
   "function claim(uint256 index, address account, uint256 amount, bytes32[] calldata merkleProof) external",
 
-  "event Transfer(address indexed from, address indexed to, uint amount)"
+  "event Transfer(address indexed from, address indexed to, uint amount)",
 ];
 
 export default ABI;

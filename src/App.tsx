@@ -1,7 +1,7 @@
-import React from 'react';
+import React from "react";
 import { WalletConnector } from "./WalletConnector";
-import { EthWalletConnector } from './EthWalletConnector';
-import { AllSteps } from './ConversionStep';
+import { EthWalletConnector } from "./EthWalletConnector";
+import { AllSteps } from "./ConversionStep";
 
 function App() {
   return (

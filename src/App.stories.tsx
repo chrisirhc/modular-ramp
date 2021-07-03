@@ -1,14 +1,14 @@
-import React from 'react';
+import React from "react";
 import { WalletConnector } from "./WalletConnector";
 import { TerraToShuttle } from "./terra-to-shuttle";
 import { EthSideComponent } from "./eth-side";
 import { EthToTerra } from "./eth-to-terra";
-import { EthWalletConnector } from './EthWalletConnector';
-import { AllSteps } from './ConversionStep';
+import { EthWalletConnector } from "./EthWalletConnector";
+import { AllSteps } from "./ConversionStep";
 import { ChakraProvider } from "@chakra-ui/react";
 
 export default {
-  title: 'OldApp',
+  title: "App",
 };
 
 export function NewApp() {

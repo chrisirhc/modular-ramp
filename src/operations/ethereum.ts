@@ -5,96 +5,104 @@ import SHUTTLE_ABI from "../shuttle-abi";
 import { EthereumContextProps } from "../EthWalletConnector";
 import { TerraContextProps } from "../WalletConnector";
 
-const ETH_TARGET_NETWORK = 'ropsten';
+const ETH_TARGET_NETWORK = "ropsten";
 
 // From https://github.com/terra-money/shuttle/blob/main/TERRA_ASSET.md#erc20-contracts
 export const UST_CONTRACT = {
-  ropsten: '0x6cA13a4ab78dd7D657226b155873A04DB929A3A4',
-  mainnet: '0xa47c8bf37f92aBed4A126BDA807A7b7498661acD',
+  ropsten: "0x6cA13a4ab78dd7D657226b155873A04DB929A3A4",
+  mainnet: "0xa47c8bf37f92aBed4A126BDA807A7b7498661acD",
 };
 
 const UST_ERC20_DECIMALS = 18;
 
 type ShuttleBurnTx = {
-  type: 'shuttleBurn',
+  type: "shuttleBurn";
   shuttleBurnArgs: {
-    toAddress: string | null | undefined,
-    ustAmount: string | undefined,
-  },
+    toAddress: string | null | undefined;
+    ustAmount: string | undefined;
+  };
 };
 
 type Tx = {
-  type: 'tx',
-  txArg: ethers.providers.TransactionRequest,
+  type: "tx";
+  txArg: ethers.providers.TransactionRequest;
 };
 
 export type PrepTx = ShuttleBurnTx | Tx;
 
 type WalletContexts = {
-  ethereumContext: EthereumContextProps,
-  terraContext: TerraContextProps
+  ethereumContext: EthereumContextProps;
+  terraContext: TerraContextProps;
 };
 
 /* bech32 */
 const decodeTerraAddressOnEtherBase = (address: string): string => {
   try {
-    const { words } = bech32.decode(address)
-    const data = bech32.fromWords(words)
-    return '0x' + Buffer.from(data).toString('hex')
+    const { words } = bech32.decode(address);
+    const data = bech32.fromWords(words);
+    return "0x" + Buffer.from(data).toString("hex");
   } catch (error) {
-    return ''
+    return "";
   }
-}
+};
 
 export async function EthToTerra(
   ustAmount: string,
-  {ethereumContext, terraContext}: {ethereumContext: EthereumContextProps, terraContext: TerraContextProps}
+  {
+    ethereumContext,
+    terraContext,
+  }: { ethereumContext: EthereumContextProps; terraContext: TerraContextProps }
 ): Promise<PrepTx> {
   // TODO: Fee estimation on Ethereum is a mystery
   const toAddress = terraContext.address;
 
   return {
-    type: 'shuttleBurn',
+    type: "shuttleBurn",
     shuttleBurnArgs: {
       toAddress,
       ustAmount,
-    }
+    },
   };
 }
 
 export type RunArg = PrepTx;
 
-export async function Run(estTx: PrepTx, {
-  onProgress = () => {},
-  ethereumContext,
-}: {
-  onProgress?: (status: string) => void,
-  ethereumContext: EthereumContextProps,
-}) {
-  if (estTx.type === 'tx') {
+export async function Run(
+  estTx: PrepTx,
+  {
+    onProgress = () => {},
+    ethereumContext,
+  }: {
+    onProgress?: (status: string) => void;
+    ethereumContext: EthereumContextProps;
+  }
+) {
+  if (estTx.type === "tx") {
     if (!ethereumContext.signer) {
-      throw new Error('Missing signer');
+      throw new Error("Missing signer");
     }
     return ethereumContext.signer.sendTransaction(estTx.txArg);
   }
 
-  if (estTx.type === 'shuttleBurn') {
+  if (estTx.type === "shuttleBurn") {
     if (!estTx.shuttleBurnArgs) {
-      throw new Error('Missing args');
+      throw new Error("Missing args");
     }
-    return shuttleBurn(estTx.shuttleBurnArgs, {ethereumContext});
+    return shuttleBurn(estTx.shuttleBurnArgs, { ethereumContext });
   }
 }
 
-async function shuttleBurn({
+async function shuttleBurn(
+  {
     toAddress,
-    ustAmount
-  }:{
-    toAddress: string | null | undefined,
-    ustAmount: string | undefined
+    ustAmount,
+  }: {
+    toAddress: string | null | undefined;
+    ustAmount: string | undefined;
   },
-  {ethereumContext}: {ethereumContext: EthereumContextProps}) {
-  const {signer} = ethereumContext;
+  { ethereumContext }: { ethereumContext: EthereumContextProps }
+) {
+  const { signer } = ethereumContext;
 
   if (!toAddress || !ustAmount) {
     return;
@@ -104,26 +112,30 @@ async function shuttleBurn({
     return;
   }
 
-  const shuttleContract = new ethers.Contract(UST_CONTRACT[ETH_TARGET_NETWORK], SHUTTLE_ABI, signer);
-  const decoded = decodeTerraAddressOnEtherBase(toAddress)
+  const shuttleContract = new ethers.Contract(
+    UST_CONTRACT[ETH_TARGET_NETWORK],
+    SHUTTLE_ABI,
+    signer
+  );
+  const decoded = decodeTerraAddressOnEtherBase(toAddress);
   const sendAmount = utils.parseUnits(ustAmount, UST_ERC20_DECIMALS);
   try {
-    const tx = shuttleContract.burn(sendAmount, decoded.padEnd(66, '0'))
+    const tx = shuttleContract.burn(sendAmount, decoded.padEnd(66, "0"));
     const { hash } = await tx;
-    return { success: true, hash }
+    return { success: true, hash };
   } catch (error) {
     throw error;
     // return handleTxErrorFromEtherBase(error)
   }
 }
 
-export async function waitForShuttle({ethereumContext}: WalletContexts) {
-  const {provider, publicAddress} = ethereumContext;
+export async function waitForShuttle({ ethereumContext }: WalletContexts) {
+  const { provider, publicAddress } = ethereumContext;
   if (!publicAddress) {
-    throw new Error('No public address of ethereum wallet');
+    throw new Error("No public address of ethereum wallet");
   }
   if (!provider) {
-    throw new Error('No provider');
+    throw new Error("No provider");
   }
 
   return new Promise((resolve) => {
@@ -132,16 +144,15 @@ export async function waitForShuttle({ethereumContext}: WalletContexts) {
     const filter = {
       address: UST_CONTRACT[ETH_TARGET_NETWORK],
       topics: [
-          utils.id("Transfer(address,address,uint256)"),
-          utils.hexZeroPad('0x0', 32 /* length of these fields */),
-          utils.hexZeroPad(publicAddress, 32)
-      ]
+        utils.id("Transfer(address,address,uint256)"),
+        utils.hexZeroPad("0x0", 32 /* length of these fields */),
+        utils.hexZeroPad(publicAddress, 32),
+      ],
     };
     provider.once(filter, (log, _) => {
-        const {data} = log;
-        const amountMinted = utils.formatEther(data);
-        const amountMintedBN = BigNumber.from(data);
-        resolve(amountMinted);
+      const { data } = log;
+      const amountMinted = utils.formatEther(data);
+      resolve(amountMinted);
     });
   });
 }

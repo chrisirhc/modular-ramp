@@ -1,5 +1,13 @@
 import React, { createContext, useEffect, useRef, useState } from "react";
-import { Box, Button, Flex, Heading, Grid, GridItem, Spacer } from "@chakra-ui/react"
+import {
+  Box,
+  Button,
+  Flex,
+  Heading,
+  Grid,
+  GridItem,
+  Spacer,
+} from "@chakra-ui/react";
 
 export default function MockDesign() {
   return (
