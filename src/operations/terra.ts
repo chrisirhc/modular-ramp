@@ -1,6 +1,4 @@
 import {
-  LCDClient,
-  Extension,
   Coin,
   Coins,
   Dec,
@@ -10,12 +8,8 @@ import {
   Int,
 } from "@terra-money/terra.js";
 import { EthereumContextProps } from "../EthWalletConnector";
-import { getLCDClient, printTerraAmount, TERRA_DECIMAL } from "../utils";
-import {
-  RefreshBalanceFn,
-  RefreshBalanceRet,
-  TerraContextProps,
-} from "../WalletConnector";
+import { getLCDClient, TERRA_DECIMAL } from "../utils";
+import { RefreshBalanceRet, TerraContextProps } from "../WalletConnector";
 import { WalletContexts } from "../types";
 
 const ETH_TARGET_NETWORK = "ropsten";
