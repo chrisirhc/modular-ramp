@@ -1,9 +1,8 @@
-import React, { createContext, useEffect, useRef, useState } from "react";
+import React, { createContext, useEffect, useState } from "react";
 import { Box, Button } from "@chakra-ui/react";
 
-import { ethers, utils, BigNumber, providers } from "ethers";
+import { ethers, utils, BigNumber } from "ethers";
 import { ERC20_ABI } from "./erc20";
-import SHUTTLE_ABI from "./shuttle-abi";
 
 // From https://github.com/terra-money/shuttle/blob/main/TERRA_ASSET.md#erc20-contracts
 const UST_CONTRACT = {
@@ -17,6 +16,7 @@ export type EthereumContextProps = {
   publicAddress: string | null;
   provider: ethers.providers.Web3Provider | null;
   signer: ethers.providers.JsonRpcSigner | null;
+  refreshBalance: () => void;
 };
 
 export const EthereumContext = createContext<EthereumContextProps>({
@@ -24,6 +24,7 @@ export const EthereumContext = createContext<EthereumContextProps>({
   publicAddress: null,
   provider: null,
   signer: null,
+  refreshBalance: () => {},
 });
 
 type Props = {
@@ -49,12 +50,42 @@ export function EthWalletConnector({ children }: Props) {
     provider: ethers.providers.Web3Provider | null;
     signer: ethers.providers.JsonRpcSigner | null;
   } | null>(null);
+  const [shouldRefreshBalance, setShouldRefreshBalance] = useState<boolean>(true);
 
   useEffect(() => {
     if (sessionStorage.getItem(CONNECTED_KEY) === CONNECTED_KEY) {
       connect();
     }
   }, []);
+
+  useEffect(() => {
+    let canceled = false;
+
+    (async () => {
+      if (!providerAndSigner || !providerAndSigner?.provider || !publicAddress || !shouldRefreshBalance) {
+        return;
+      }
+
+      const { provider } = providerAndSigner;
+      const erc20 = new ethers.Contract(
+        UST_CONTRACT[ETH_TARGET_NETWORK],
+        ERC20_ABI,
+        provider
+      );
+      const balance: BigNumber = await erc20.balanceOf(publicAddress);
+      const decimals = await erc20.decimals();
+      const symbol = await erc20.symbol();
+      if (canceled) {
+        return;
+      }
+      setUSTBalance({ balance, decimals, symbol });
+      setShouldRefreshBalance(false);
+    })();
+
+    return () => {
+      canceled = true;
+    }
+  }, [providerAndSigner, publicAddress, shouldRefreshBalance]);
 
   return (
     <>
@@ -77,6 +108,7 @@ export function EthWalletConnector({ children }: Props) {
           publicAddress,
           provider: providerAndSigner?.provider || null,
           signer: providerAndSigner?.signer || null,
+          refreshBalance,
         }}
       >
         {children}
@@ -88,16 +120,6 @@ export function EthWalletConnector({ children }: Props) {
     // Only works with Metamask right now.
     const provider = new ethers.providers.Web3Provider(window.ethereum);
     const signer = provider.getSigner();
-    const erc20 = new ethers.Contract(
-      UST_CONTRACT[ETH_TARGET_NETWORK],
-      ERC20_ABI,
-      provider
-    );
-    const shuttleContract = new ethers.Contract(
-      UST_CONTRACT[ETH_TARGET_NETWORK],
-      SHUTTLE_ABI,
-      signer
-    );
     setProviderAndSigner({
       provider,
       signer,
@@ -107,11 +129,10 @@ export function EthWalletConnector({ children }: Props) {
     const publicAddress = await signer.getAddress();
     setPublicAddress(publicAddress);
 
-    const balance: BigNumber = await erc20.balanceOf(publicAddress);
-    const decimals = await erc20.decimals();
-    const symbol = await erc20.symbol();
-    setUSTBalance({ balance, decimals, symbol });
-
     sessionStorage.setItem(CONNECTED_KEY, CONNECTED_KEY);
+  }
+
+  function refreshBalance() {
+    setShouldRefreshBalance(true);
   }
 }

@@ -388,8 +388,10 @@ async function execute({
     switch (step.network) {
       case "terra":
         await TerraRun(step.args, { terraContext, onProgress });
+        terraContext.refreshBalance();
         onProgress("Waiting for transaction on Eth side");
         await EthWaitForShuttle({ ethereumContext, terraContext });
+        ethereumContext.refreshBalance();
         break;
       case "eth":
         if (steps[i + 1].network === "terra") {
@@ -398,7 +400,8 @@ async function execute({
           // if coins were bridged.
           await terraContext.refreshBalance();
         }
-        await EthereumRun(step.args, { ethereumContext });
+        await EthereumRun(step.args, { ethereumContext, onProgress });
+        ethereumContext.refreshBalance();
         if (steps[i + 1].network === "terra") {
           // This is naive and just watches for any changes in the balance.
           // This doesn't watch for changes in CW20 coins, only native coins.

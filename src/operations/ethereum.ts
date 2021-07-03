@@ -1,6 +1,5 @@
-import { ethers, utils, BigNumber, providers } from "ethers";
+import { ethers, utils } from "ethers";
 import { bech32 } from "bech32";
-import { ERC20_ABI } from "../erc20";
 import SHUTTLE_ABI from "../shuttle-abi";
 import { EthereumContextProps } from "../EthWalletConnector";
 import { TerraContextProps } from "../WalletConnector";
@@ -81,14 +80,17 @@ export async function Run(
     if (!ethereumContext.signer) {
       throw new Error("Missing signer");
     }
-    return ethereumContext.signer.sendTransaction(estTx.txArg);
+    onProgress('Initiating transaction...');
+    const ret = await ethereumContext.signer.sendTransaction(estTx.txArg);
+    onProgress('Transaction successful');
+    return ret;
   }
 
   if (estTx.type === "shuttleBurn") {
     if (!estTx.shuttleBurnArgs) {
       throw new Error("Missing args");
     }
-    return shuttleBurn(estTx.shuttleBurnArgs, { ethereumContext });
+    return shuttleBurn(estTx.shuttleBurnArgs, { ethereumContext, onProgress });
   }
 }
 
@@ -100,7 +102,13 @@ async function shuttleBurn(
     toAddress: string | null | undefined;
     ustAmount: string | undefined;
   },
-  { ethereumContext }: { ethereumContext: EthereumContextProps }
+  { 
+    onProgress = () => {},
+    ethereumContext
+  }: { 
+    onProgress?: (status: string) => void;
+    ethereumContext: EthereumContextProps;
+  }
 ) {
   const { signer } = ethereumContext;
 
@@ -121,7 +129,9 @@ async function shuttleBurn(
   const sendAmount = utils.parseUnits(ustAmount, UST_ERC20_DECIMALS);
   try {
     const tx = shuttleContract.burn(sendAmount, decoded.padEnd(66, "0"));
+    onProgress('Initiating transaction...');
     const { hash } = await tx;
+    onProgress('Transaction successful.');
     return { success: true, hash };
   } catch (error) {
     throw error;
