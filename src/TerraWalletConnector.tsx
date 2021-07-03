@@ -107,7 +107,7 @@ export function TerraWalletConnector({ onChange }: Props) {
       balance,
       refreshBalance,
     });
-  }, [onChange, extension, wallet, balance, refreshBalance]);
+  }, [onChange, extension, wallet, balance]);
 
   const uusdBal = balance && balance.get("uusd");
 
