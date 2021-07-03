@@ -401,6 +401,8 @@ async function execute({
           await terraContext.refreshBalance();
         }
         await EthereumRun(step.args, { ethereumContext, onProgress });
+        // TODO: This doesn't get the new balance immediately :|
+        // Try another method to poll, possibly another UX pattern.
         ethereumContext.refreshBalance();
         if (steps[i + 1].network === "terra") {
           // This is naive and just watches for any changes in the balance.
