@@ -213,7 +213,7 @@ export function TransactionSummary({
   const [executionSteps, setExecutionSteps] = useState<Step[] | null>(null);
 
   return (
-    <VStack bg="tomato" m={5} p={2} borderRadius="md" align="start">
+    <VStack bg="teal.200" m={5} p={2} borderRadius="md" align="start">
       <Heading size="lg">Summary</Heading>
       <Code as="pre">{JSON.stringify(steps, null, 2)}</Code>
       <Button
