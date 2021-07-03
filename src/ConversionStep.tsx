@@ -213,7 +213,7 @@ export function TransactionSummary({
   const ethereumContext = useContext(EthereumContext);
   const [executionSteps, setExecutionSteps] = useState<Step[] | null>(null);
 
-  const bg = useColorModeValue('teal.100', 'teal.800');
+  const bg = useColorModeValue("teal.100", "teal.800");
   return (
     <VStack bg={bg} m={5} p={2} borderRadius="md" align="start">
       <Heading size="lg">Summary</Heading>

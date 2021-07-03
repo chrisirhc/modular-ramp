@@ -4,6 +4,13 @@ import { Box, Button } from "@chakra-ui/react";
 import { ethers, utils, BigNumber } from "ethers";
 import { ERC20_ABI } from "./erc20";
 
+// Assume this is injected by Metamask
+declare global {
+  interface Window {
+    ethereum: any;
+  }
+}
+
 // From https://github.com/terra-money/shuttle/blob/main/TERRA_ASSET.md#erc20-contracts
 const UST_CONTRACT = {
   ropsten: "0x6cA13a4ab78dd7D657226b155873A04DB929A3A4",

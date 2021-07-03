@@ -1,5 +1,5 @@
 import React, { createContext, useEffect, useRef, useState } from "react";
-import { Box, Button, HStack } from "@chakra-ui/react";
+import { Box, Button, HStack, Select } from "@chakra-ui/react";
 import {
   EthWalletConnector,
   EthereumContext,
@@ -16,6 +16,7 @@ type Props = {
 };
 
 export function WalletConnector({ children }: Props) {
+  const [whichNet, setWhichNet] = useState("ropstentequila");
   const [terraContext, setTerraContext] = useState<TerraContextProps>({
     extension: null,
     address: null,
@@ -33,6 +34,18 @@ export function WalletConnector({ children }: Props) {
   return (
     <Box>
       <Box p={4} shadow="md" borderWidth="1px" borderRadius="md" m={5}>
+        <Box>
+          <Select
+            mb={2}
+            value={whichNet}
+            onChange={(e) => setWhichNet(e.target.value)}
+            borderColor={whichNet === "mainnet" ? "red.500" : undefined}
+            bg={whichNet === "mainnet" ? "red.500" : "transparent"}
+          >
+            <option value="ropstentequila">Ropsten / Tequila</option>
+            <option value="mainnet">Mainnet</option>
+          </Select>
+        </Box>
         <HStack>
           <EthWalletConnector onChange={setEthereumContext} />
           <TerraWalletConnector onChange={setTerraContext} />
