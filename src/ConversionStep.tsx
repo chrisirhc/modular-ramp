@@ -46,63 +46,99 @@ import {
 } from "./operations/ethereum";
 import { estimate as OneInchEstimate } from "./operations/1inch";
 
-type Currency = {
-  network: "eth" | "terra" | "bsc";
-  currency: "UST" | "USDC" | string | null;
-  amount?: string; // Might need to check on a standard amount
-  // there's some fees involved
-};
+const NETWORKS = {
+  eth: "Ethereum",
+  terra: "Terra",
+} as const;
+type Network = keyof typeof NETWORKS;
+const NETWORK_OPTIONS: Network[] = ["eth", "terra"];
 
-type FirstStepProps = {
+class Currency {
+  network: Network | null = null;
+  currency: "UST" | "USDC" | string | null = null;
+  amount?: string | null = null; // Might need to check on a standard amount
+  // there's some fees involved
+}
+
+interface FirstStepProps {
   input?: Currency;
+  output: Currency;
   onChange: (output: Currency) => void;
+  onAddStep: () => void;
   // output, fees
-};
+}
 
 type Status = string | null;
 
-type ConversionStepProps = {
+interface ConversionStepProps extends FirstStepProps {
   stepNumber: number;
-  input: Currency;
-  onChange: (output: Currency) => void;
   status: Status;
   // output, fees
-};
+}
 
 export function AllSteps() {
-  const [steps, setSteps] = useState<Currency[]>([]);
+  const [steps, setSteps] = useState<Currency[]>([new Currency()]);
   const [statuses, setStatuses] = useState<Status[]>([]);
   return (
     <Box p={4} shadow="md" borderWidth="1px" borderRadius="md" m={5}>
       <VStack divider={<StackDivider borderColor="gray.200" />} spacing={4}>
-        <FirstStep
-          onChange={(output) => setSteps([output, ...steps.slice(1)])}
-        />
-        {steps.map((step, i) => (
-          <Step
-            stepNumber={i}
-            key={i}
-            input={step}
-            onChange={(output) =>
-              setSteps([
-                ...steps.slice(0, i + 1),
-                output,
-                ...steps.slice(i + 2),
-              ])
-            }
-            status={statuses[i]}
-          />
-        ))}
+        {steps.map((step, i) =>
+          i === 0 ? (
+            <Box>
+              <FirstStep
+                output={step}
+                onChange={(output) => setSteps([output, ...steps.slice(1)])}
+                onAddStep={() => setSteps([...steps, new Currency()])}
+              />
+            </Box>
+          ) : (
+            <Step
+              stepNumber={i - 1}
+              key={i}
+              input={steps[i - 1]}
+              output={step}
+              onChange={(output) =>
+                setSteps([...steps.slice(0, i), output, ...steps.slice(i + 1)])
+              }
+              onAddStep={() => setSteps([...steps, new Currency()])}
+              status={statuses[i]}
+            />
+          )
+        )}
         <TransactionSummary steps={steps} onStatusesChange={setStatuses} />
       </VStack>
     </Box>
   );
 }
 
-export function FirstStep({ input, onChange }: FirstStepProps) {
-  const [network, setNetwork] = useState<string | null>(null);
-  const [currency, setCurrency] = useState<string | null>(null);
+export function FirstStep({
+  input,
+  output,
+  onChange,
+  onAddStep,
+}: FirstStepProps) {
   const amountInputRef = useRef<HTMLInputElement>(null);
+
+  const setNetwork = (network: Network) => {
+    onChange({
+      ...output,
+      network,
+    });
+  };
+
+  const setCurrency = (currency: string) => {
+    onChange({
+      ...output,
+      currency,
+    });
+  };
+
+  const setAmount = (amount: string) => {
+    onChange({
+      ...output,
+      amount,
+    });
+  };
 
   // No constraints, pick whatever you want and handle the estimates
   return (
@@ -112,11 +148,12 @@ export function FirstStep({ input, onChange }: FirstStepProps) {
           <FormLabel>Network</FormLabel>
           <Select
             placeholder="Select network"
-            onChange={(event) => setNetwork(event.target.value)}
+            value={output.network || undefined}
+            onChange={(event) => setNetwork(event.target.value as Network)}
           >
-            <option>eth</option>
-            <option>terra</option>
-            {/* <option>bsc</option> */}
+            {NETWORK_OPTIONS.map((networkOption) => (
+              <option value={networkOption}>{NETWORKS[networkOption]}</option>
+            ))}
           </Select>
         </FormControl>
         {input?.network !== "terra" ? (
@@ -139,41 +176,21 @@ export function FirstStep({ input, onChange }: FirstStepProps) {
             placeholder="Enter amount"
             type="number"
             pr="4.5rem"
-            ref={amountInputRef}
             min="0"
+            value={output.amount || undefined}
+            onChange={(event) => setAmount(event.target.value)}
           />
           <InputRightElement
             pointerEvents="none"
             color="gray.300"
             fontSize="1.2em"
             width="4.5rem"
-            children={currency}
+            children={output.currency}
           />
         </InputGroup>
       </FormControl>
-      <Button
-        mt={5}
-        onClick={() => {
-          if (
-            !(network === "eth" || network === "bsc" || network === "terra")
-          ) {
-            return;
-          }
-          // TODO: Leave validations for later.
-          // if (!(currency === 'UST' || currency === 'USDC')) {
-          //   return;
-          // }
-          if (!amountInputRef.current) {
-            return;
-          }
-          onChange({
-            network,
-            currency,
-            amount: amountInputRef.current.value,
-          });
-        }}
-      >
-        Next
+      <Button mt={5} onClick={onAddStep}>
+        Add Step
       </Button>
     </>
   );
@@ -182,14 +199,21 @@ export function FirstStep({ input, onChange }: FirstStepProps) {
 export function Step({
   stepNumber,
   input,
+  output,
   onChange,
+  onAddStep,
   status,
 }: ConversionStepProps) {
   // Input is first step, it restricts output currency
   return (
     <Box>
       <Heading size="md">Step {stepNumber + 1}</Heading>
-      <FirstStep input={input} onChange={onChange} />
+      <FirstStep
+        input={input}
+        output={output}
+        onAddStep={onAddStep}
+        onChange={onChange}
+      />
       {status ? (
         <>
           <Spinner />
@@ -211,7 +235,9 @@ export function TransactionSummary({
 }: TransactionSummaryProps) {
   const terraContext = useContext(TerraContext);
   const ethereumContext = useContext(EthereumContext);
-  const [executionSteps, setExecutionSteps] = useState<Step[] | null>(null);
+  const [executionSteps, setExecutionSteps] = useState<ExecutionStep[] | null>(
+    null
+  );
 
   const bg = useColorModeValue("teal.100", "teal.800");
   return (
@@ -266,7 +292,7 @@ type estimateArg = {
   ethereumContext: EthereumContextProps;
 };
 
-type Step =
+type ExecutionStep =
   | {
       network: "eth";
       args: EthereumRunArg;
@@ -280,10 +306,10 @@ type Step =
 
 async function estimate(
   { steps, terraContext, ethereumContext }: estimateArg,
-  setExecutionSteps: (steps: Step[]) => void
+  setExecutionSteps: (steps: ExecutionStep[]) => void
 ) {
   // Do a bunch of things and then update the estimates and create intermediate transactions.
-  const executionSteps: Step[] = [];
+  const executionSteps: ExecutionStep[] = [];
   for (let i = 1; i < steps.length; i++) {
     executionSteps.push(
       await estimateStep(steps[i - 1], steps[i], {
@@ -302,7 +328,7 @@ async function estimateStep(
     terraContext,
     ethereumContext,
   }: { terraContext: TerraContextProps; ethereumContext: EthereumContextProps }
-): Promise<Step> {
+): Promise<ExecutionStep> {
   if (input.network === "terra" && output.network === "eth") {
     // To Shuttle
     if (!input.amount) {
@@ -365,7 +391,7 @@ async function estimateStep(
 }
 
 type executeArg = {
-  executionSteps: Step[];
+  executionSteps: ExecutionStep[];
   steps: Currency[];
   terraContext: TerraContextProps;
   ethereumContext: EthereumContextProps;
