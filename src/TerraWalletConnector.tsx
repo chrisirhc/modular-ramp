@@ -112,7 +112,7 @@ export function TerraWalletConnector({ onChange }: Props) {
   const uusdBal = balance && balance.get("uusd");
 
   return (
-    <Box flex="1">
+    <Box>
       <Button onClick={connect} disabled={Boolean(wallet)}>
         {wallet ? `Connected` : "Connect"} to Terra
       </Button>

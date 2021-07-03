@@ -111,7 +111,7 @@ export function EthWalletConnector({ onChange }: Props) {
   }, [onChange, USTBalance, publicAddress, providerAndSigner]);
 
   return (
-    <Box flex="1">
+    <Box>
       <Button onClick={connect} disabled={Boolean(publicAddress)}>
         {publicAddress ? `Connected` : "Connect"} to Ethereum
       </Button>

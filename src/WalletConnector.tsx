@@ -1,5 +1,5 @@
 import React, { createContext, useEffect, useRef, useState } from "react";
-import { Box, Button, HStack, Select } from "@chakra-ui/react";
+import { Box, Button, HStack, Select, Wrap, WrapItem } from "@chakra-ui/react";
 import {
   EthWalletConnector,
   EthereumContext,
@@ -46,10 +46,14 @@ export function WalletConnector({ children }: Props) {
             <option value="mainnet">Mainnet</option>
           </Select>
         </Box>
-        <HStack>
-          <EthWalletConnector onChange={setEthereumContext} />
-          <TerraWalletConnector onChange={setTerraContext} />
-        </HStack>
+        <Wrap justify="space-evenly">
+          <WrapItem>
+            <EthWalletConnector onChange={setEthereumContext} />
+          </WrapItem>
+          <WrapItem>
+            <TerraWalletConnector onChange={setTerraContext} />
+          </WrapItem>
+        </Wrap>
       </Box>
       <Box>
         <TerraContext.Provider value={terraContext}>
