@@ -27,6 +27,7 @@ import {
   AccordionPanel,
   AccordionIcon,
   Spinner,
+  useColorModeValue,
 } from "@chakra-ui/react";
 
 import { EthereumContext, EthereumContextProps } from "./EthWalletConnector";
@@ -212,8 +213,9 @@ export function TransactionSummary({
   const ethereumContext = useContext(EthereumContext);
   const [executionSteps, setExecutionSteps] = useState<Step[] | null>(null);
 
+  const bg = useColorModeValue('teal.100', 'teal.800');
   return (
-    <VStack bg="teal.200" m={5} p={2} borderRadius="md" align="start">
+    <VStack bg={bg} m={5} p={2} borderRadius="md" align="start">
       <Heading size="lg">Summary</Heading>
       <Code as="pre">{JSON.stringify(steps, null, 2)}</Code>
       <Button
