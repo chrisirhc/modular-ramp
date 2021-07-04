@@ -116,7 +116,7 @@ export async function Run(
     extension.once("onPost", (payload) => {
       console.log(payload);
       resolve(payload);
-      onProgress(`Trancation ID: ${payload.id}, Success: ${payload.success}`);
+      onProgress(`Transaction ID: ${payload.id}, Success: ${payload.success}`);
     });
     onProgress("Posting transaction...");
   });
