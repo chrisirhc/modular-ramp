@@ -278,7 +278,7 @@ export function TransactionSummary({
   return (
     <VStack bg={bg} m={5} p={2} borderRadius="md" align="start">
       <Heading size="lg">Summary</Heading>
-      <Code as="pre">{JSON.stringify(steps, null, 2)}</Code>
+      {/* <Code as="pre">{JSON.stringify(steps, null, 2)}</Code> */}
       <Button
         onClick={() =>
           estimate({ steps, terraContext, ethereumContext }, setExecutionSteps)
