@@ -65,7 +65,7 @@ export function TerraWalletConnector({ networkType, onChange }: Props) {
 
   useEffect(() => {
     refreshBalance();
-  }, [wallet]);
+  }, [wallet, networkType]);
 
   // Use state to set up a refreshing state
   useEffect(() => {
@@ -100,7 +100,7 @@ export function TerraWalletConnector({ networkType, onChange }: Props) {
       // Should resolve the old balance into the new version
       // Should this reject the old refresh call or return a new one?
     };
-  }, [shouldRefreshBalance, wallet, balance]);
+  }, [shouldRefreshBalance, wallet, balance, networkType]);
 
   // Argument of type '() => Promise<{ balanceHasChanged: boolean; } | undefined>' is not assignable to parameter of type 'RefreshBalanceRet'.
   // Property 'balanceHasChanged' is missing in type '() => Promise<{ balanceHasChanged: boolean; } | undefined>' but required in type 'RefreshBalanceRet'.
