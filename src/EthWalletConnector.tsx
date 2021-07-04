@@ -13,11 +13,10 @@ declare global {
 }
 
 // From https://github.com/terra-money/shuttle/blob/main/TERRA_ASSET.md#erc20-contracts
-const UST_CONTRACT = {
-  ropsten: "0x6cA13a4ab78dd7D657226b155873A04DB929A3A4",
+const UST_CONTRACT: Record<NetworkType, string> = {
+  testnet: "0x6cA13a4ab78dd7D657226b155873A04DB929A3A4",
   mainnet: "0xa47c8bf37f92aBed4A126BDA807A7b7498661acD",
 };
-const ETH_TARGET_NETWORK = "ropsten";
 
 export type EthereumContextProps = {
   USTBalance: Balance | null;
@@ -84,25 +83,29 @@ export function EthWalletConnector({ networkType, onChange }: Props) {
       }
 
       const { provider } = providerAndSigner;
-      const erc20 = new ethers.Contract(
-        UST_CONTRACT[ETH_TARGET_NETWORK],
-        ERC20_ABI,
-        provider
-      );
-      const balance: BigNumber = await erc20.balanceOf(publicAddress);
-      const decimals = await erc20.decimals();
-      const symbol = await erc20.symbol();
-      if (canceled) {
-        return;
+      try {
+        const erc20 = new ethers.Contract(
+          UST_CONTRACT[networkType],
+          ERC20_ABI,
+          provider
+        );
+        const balance: BigNumber = await erc20.balanceOf(publicAddress);
+        const decimals = await erc20.decimals();
+        const symbol = await erc20.symbol();
+        if (canceled) {
+          return;
+        }
+        setUSTBalance({ balance, decimals, symbol });
+        setShouldRefreshBalance(false);
+      } catch (e) {
+        console.error(e);
       }
-      setUSTBalance({ balance, decimals, symbol });
-      setShouldRefreshBalance(false);
     })();
 
     return () => {
       canceled = true;
     };
-  }, [providerAndSigner, publicAddress, shouldRefreshBalance]);
+  }, [providerAndSigner, publicAddress, shouldRefreshBalance, networkType]);
 
   useEffect(() => {
     onChange({

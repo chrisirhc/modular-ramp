@@ -3,14 +3,13 @@ import { bech32 } from "bech32";
 import SHUTTLE_ABI from "../shuttle-abi";
 import { EthereumContextProps } from "../EthWalletConnector";
 import { TerraContextProps } from "../TerraWalletConnector";
-
-const ETH_TARGET_NETWORK = "ropsten";
+import { NetworkType } from "../constants";
 
 // From https://github.com/terra-money/shuttle/blob/main/TERRA_ASSET.md#erc20-contracts
-export const UST_CONTRACT = {
-  ropsten: "0x6cA13a4ab78dd7D657226b155873A04DB929A3A4",
+export const UST_CONTRACT: Record<NetworkType, string> = {
+  testnet: "0x6cA13a4ab78dd7D657226b155873A04DB929A3A4",
   mainnet: "0xa47c8bf37f92aBed4A126BDA807A7b7498661acD",
-};
+} as const;
 
 const UST_ERC20_DECIMALS = 18;
 
@@ -76,21 +75,31 @@ export async function Run(
     ethereumContext: EthereumContextProps;
   }
 ) {
-  if (estTx.type === "tx") {
-    if (!ethereumContext.signer) {
-      throw new Error("Missing signer");
-    }
-    onProgress("Initiating transaction...");
-    const ret = await ethereumContext.signer.sendTransaction(estTx.txArg);
-    onProgress("Transaction successful");
-    return ret;
-  }
-
-  if (estTx.type === "shuttleBurn") {
-    if (!estTx.shuttleBurnArgs) {
-      throw new Error("Missing args");
-    }
-    return shuttleBurn(estTx.shuttleBurnArgs, { ethereumContext, onProgress });
+  switch (estTx.type) {
+    case "tx":
+      if (!ethereumContext.signer) {
+        throw new Error("Missing signer");
+      }
+      onProgress("Initiating transaction...");
+      try {
+        const ret = await ethereumContext.signer.sendTransaction(estTx.txArg);
+        onProgress("Transaction successful");
+        return ret;
+      } catch (e) {
+        onProgress(`Transaction failed ${e}`);
+        throw e;
+      }
+    case "shuttleBurn":
+      if (!estTx.shuttleBurnArgs) {
+        throw new Error("Missing args");
+      }
+      return shuttleBurn(estTx.shuttleBurnArgs, {
+        ethereumContext,
+        onProgress,
+      });
+    default:
+      const _exhaustiveCheck: never = estTx;
+      throw new Error(`Unreachable code reached due to ${_exhaustiveCheck}`);
   }
 }
 
@@ -110,9 +119,9 @@ async function shuttleBurn(
     ethereumContext: EthereumContextProps;
   }
 ) {
-  const { signer } = ethereumContext;
+  const { signer, networkType } = ethereumContext;
 
-  if (!toAddress || !ustAmount) {
+  if (!toAddress || !ustAmount || !networkType) {
     return;
   }
 
@@ -121,7 +130,7 @@ async function shuttleBurn(
   }
 
   const shuttleContract = new ethers.Contract(
-    UST_CONTRACT[ETH_TARGET_NETWORK],
+    UST_CONTRACT[networkType],
     SHUTTLE_ABI,
     signer
   );
@@ -140,19 +149,22 @@ async function shuttleBurn(
 }
 
 export async function waitForShuttle({ ethereumContext }: WalletContexts) {
-  const { provider, publicAddress } = ethereumContext;
+  const { provider, publicAddress, networkType } = ethereumContext;
   if (!publicAddress) {
     throw new Error("No public address of ethereum wallet");
   }
   if (!provider) {
     throw new Error("No provider");
   }
+  if (!networkType) {
+    throw new Error("No network type selected");
+  }
 
   return new Promise((resolve) => {
     // Look for transfers to the target address
     // Since it's bridged, this is minted (i.e. fromAddress=0x0).
     const filter = {
-      address: UST_CONTRACT[ETH_TARGET_NETWORK],
+      address: UST_CONTRACT[networkType],
       topics: [
         utils.id("Transfer(address,address,uint256)"),
         utils.hexZeroPad("0x0", 32 /* length of these fields */),
