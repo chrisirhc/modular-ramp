@@ -1,4 +1,4 @@
-import { Coin, Dec, LCDClient } from "@terra-money/terra.js";
+import { Coin, Dec } from "@terra-money/terra.js";
 
 export const TERRA_DECIMAL = 1e6;
 
