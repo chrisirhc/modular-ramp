@@ -44,16 +44,10 @@ import {
   waitForShuttle as EthWaitForShuttle,
 } from "./operations/ethereum";
 import { estimate as OneInchEstimate } from "./operations/1inch";
-
-const NETWORKS = {
-  eth: "Ethereum",
-  terra: "Terra",
-} as const;
-type Network = keyof typeof NETWORKS;
-const NETWORK_OPTIONS: Network[] = ["eth", "terra"];
+import { BlockChain, BlockChainType, BLOCKCHAIN_OPTIONS } from "./constants";
 
 class Currency {
-  network: Network | null = null;
+  network: BlockChainType | null = null;
   currency: "UST" | "USDC" | string | null = null;
   amount?: string | null = null; // Might need to check on a standard amount
   // there's some fees involved
@@ -135,7 +129,7 @@ export function StepForm({
   onAddStep,
   onRemoveStep,
 }: StepFormProps) {
-  const setNetwork = (network: Network) => {
+  const setNetwork = (network: BlockChainType) => {
     onChange({
       ...output,
       network,
@@ -165,10 +159,14 @@ export function StepForm({
           <Select
             placeholder="Select network"
             value={output.network || ""}
-            onChange={(event) => setNetwork(event.target.value as Network)}
+            onChange={(event) =>
+              setNetwork(event.target.value as BlockChainType)
+            }
           >
-            {NETWORK_OPTIONS.map((networkOption) => (
-              <option value={networkOption}>{NETWORKS[networkOption]}</option>
+            {BLOCKCHAIN_OPTIONS.map((blockChainOption) => (
+              <option value={blockChainOption}>
+                {BlockChain[blockChainOption]}
+              </option>
             ))}
           </Select>
         </FormControl>
@@ -233,7 +231,7 @@ export function Step({
     switch (true) {
       case input.network !== output.network:
         setStepName(
-          `Bridge ${NETWORKS[input.network]} to ${NETWORKS[output.network]}`
+          `Bridge ${BlockChain[input.network]} to ${BlockChain[output.network]}`
         );
         break;
       default:
@@ -366,7 +364,7 @@ async function estimateStep(
     ethereumContext,
   }: { terraContext: TerraContextProps; ethereumContext: EthereumContextProps }
 ): Promise<ExecutionStep> {
-  if (input.network === "terra" && output.network === "eth") {
+  if (input.network === "terra" && output.network === "ethereum") {
     // To Shuttle
     if (!input.amount) {
       throw new Error("No input amount");
@@ -380,7 +378,7 @@ async function estimateStep(
       args: estTx,
       info: estTx,
     };
-  } else if (input.network === "eth" && output.network === "terra") {
+  } else if (input.network === "ethereum" && output.network === "terra") {
     if (!input.amount) {
       throw new Error("No input amount");
     }
@@ -394,7 +392,7 @@ async function estimateStep(
       args: estTx,
       info: estTx,
     };
-  } else if (input.network === "eth" && output.network === "eth") {
+  } else if (input.network === "ethereum" && output.network === "ethereum") {
     if (!input.amount) {
       throw new Error("No input amount");
     }

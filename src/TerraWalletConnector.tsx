@@ -1,17 +1,10 @@
-import React, { createContext, useEffect, useRef, useState } from "react";
+import React, { createContext, useEffect, useState } from "react";
 import { Box, Button } from "@chakra-ui/react";
 
-import {
-  Extension,
-  Coin,
-  Coins,
-  Dec,
-  MsgSend,
-  StdFee,
-  CreateTxOptions,
-  Int,
-} from "@terra-money/terra.js";
-import { getLCDClient, TERRA_DECIMAL, printTerraAmount } from "./utils";
+import { Extension, Coins } from "@terra-money/terra.js";
+import { printTerraAmount } from "./utils";
+import { NetworkType, TERRA_NETWORKS } from "./constants";
+import { getLCDClient } from "./operations/terra";
 
 // Return true if the balance has changed
 export type RefreshBalanceRet = {
@@ -26,16 +19,26 @@ export type TerraContextProps = {
   address: string | null;
   balance: Coins | null;
   refreshBalance: RefreshBalanceFn;
+  networkType: NetworkType | null;
 };
+
+export interface InfoResponse {
+  chainID: string;
+  fcd: string;
+  lcd: string;
+  name: string;
+}
 
 export const TerraContext = createContext<TerraContextProps>({
   extension: null,
   address: null,
   balance: null,
   refreshBalance: () => {},
+  networkType: null,
 });
 
 type Props = {
+  networkType: NetworkType;
   onChange: (t: TerraContextProps) => void;
 };
 
@@ -45,10 +48,11 @@ type ShouldRefreshBalanceType = {
   resolve: (ret: RefreshBalanceRet | Promise<RefreshBalanceRet>) => void;
 };
 
-export function TerraWalletConnector({ onChange }: Props) {
+export function TerraWalletConnector({ networkType, onChange }: Props) {
   const [extension, setExtension] = useState<Extension | null>(null);
   const [wallet, setWallet] = useState<string | null>(null);
   const [balance, setBalance] = useState<Coins | null>(null);
+  const [connectInfo, setConnectInfo] = useState<InfoResponse | null>(null);
   const [shouldRefreshBalance, setShouldRefreshBalance] =
     useState<null | ShouldRefreshBalanceType>(null);
 
@@ -73,7 +77,9 @@ export function TerraWalletConnector({ onChange }: Props) {
       return;
     }
     (async () => {
-      const newBalance = await getLCDClient().bank.balance(wallet);
+      const newBalance = await getLCDClient({ networkType }).bank.balance(
+        wallet
+      );
       if (canceled) {
         return;
       }
@@ -100,14 +106,19 @@ export function TerraWalletConnector({ onChange }: Props) {
   // Property 'balanceHasChanged' is missing in type '() => Promise<{ balanceHasChanged: boolean; } | undefined>' but required in type 'RefreshBalanceRet'.
 
   useEffect(() => {
+    if (connectInfo && TERRA_NETWORKS[networkType].lcd !== connectInfo.lcd) {
+      console.error("Network chosen does not match Terra extension network");
+    }
+
     onChange({
       /* TODO: Use Memo */
       extension,
       address: wallet,
       balance,
+      networkType,
       refreshBalance,
     });
-  }, [onChange, extension, wallet, balance]);
+  }, [onChange, extension, wallet, balance, networkType, connectInfo]);
 
   const uusdBal = balance && balance.get("uusd");
 
@@ -138,6 +149,11 @@ export function TerraWalletConnector({ onChange }: Props) {
     extension.connect();
     extension.on("onConnect", (w: ConnectResponse) => {
       setWallet(w.address);
+
+      extension.info();
+      extension.on("onInfo", (info: InfoResponse) => {
+        setConnectInfo(info);
+      });
     });
     setExtension(extension);
     sessionStorage.setItem(CONNECTED_KEY, CONNECTED_KEY);

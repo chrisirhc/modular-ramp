@@ -14,11 +14,3 @@ export function printTerraAmount(coin: Coin | null | undefined) {
       .replace(/\.?0+$/, "")
   );
 }
-
-export function getLCDClient() {
-  // connect to soju testnet
-  return new LCDClient({
-    URL: "https://tequila-lcd.terra.dev",
-    chainID: "tequila-0004",
-  });
-}

@@ -1,6 +1,12 @@
 import React, { createContext, useEffect, useRef, useState } from "react";
 import { Box, Button, HStack, Select, Wrap, WrapItem } from "@chakra-ui/react";
 import {
+  DEFAULT_NETWORK_TYPE,
+  NetworkType,
+  NETWORK_TYPES,
+  NETWORK_TYPE_OPTIONS,
+} from "./constants";
+import {
   EthWalletConnector,
   EthereumContext,
   EthereumContextProps,
@@ -16,12 +22,14 @@ type Props = {
 };
 
 export function WalletConnector({ children }: Props) {
-  const [whichNet, setWhichNet] = useState("ropstentequila");
+  const [networkType, setNetworkType] =
+    useState<NetworkType>(DEFAULT_NETWORK_TYPE);
   const [terraContext, setTerraContext] = useState<TerraContextProps>({
     extension: null,
     address: null,
     balance: null,
     refreshBalance: () => {},
+    networkType: DEFAULT_NETWORK_TYPE,
   });
   const [ethereumContext, setEthereumContext] = useState<EthereumContextProps>({
     USTBalance: null,
@@ -29,6 +37,7 @@ export function WalletConnector({ children }: Props) {
     provider: null,
     signer: null,
     refreshBalance: () => {},
+    networkType: DEFAULT_NETWORK_TYPE,
   });
 
   return (
@@ -37,21 +46,28 @@ export function WalletConnector({ children }: Props) {
         <Box>
           <Select
             mb={2}
-            value={whichNet}
-            onChange={(e) => setWhichNet(e.target.value)}
-            borderColor={whichNet === "mainnet" ? "red.500" : undefined}
-            bg={whichNet === "mainnet" ? "red.500" : "transparent"}
+            value={networkType}
+            onChange={(e) => setNetworkType(e.target.value as NetworkType)}
+            borderColor={networkType === "mainnet" ? "red.500" : undefined}
+            bg={networkType === "mainnet" ? "red.500" : "transparent"}
           >
-            <option value="ropstentequila">Ropsten / Tequila</option>
-            <option value="mainnet">Mainnet</option>
+            {NETWORK_TYPE_OPTIONS.map((networkType) => (
+              <option value={networkType}>{NETWORK_TYPES[networkType]}</option>
+            ))}
           </Select>
         </Box>
         <Wrap justify="space-evenly">
           <WrapItem>
-            <EthWalletConnector onChange={setEthereumContext} />
+            <EthWalletConnector
+              networkType={networkType}
+              onChange={setEthereumContext}
+            />
           </WrapItem>
           <WrapItem>
-            <TerraWalletConnector onChange={setTerraContext} />
+            <TerraWalletConnector
+              networkType={networkType}
+              onChange={setTerraContext}
+            />
           </WrapItem>
         </Wrap>
       </Box>

@@ -6,18 +6,16 @@ import {
   StdFee,
   CreateTxOptions,
   Int,
+  LCDClient,
 } from "@terra-money/terra.js";
-import { EthereumContextProps } from "../EthWalletConnector";
-import { getLCDClient, TERRA_DECIMAL } from "../utils";
+import { TERRA_DECIMAL } from "../utils";
 import { RefreshBalanceRet, TerraContextProps } from "../TerraWalletConnector";
 import { WalletContexts } from "../types";
-
-const ETH_TARGET_NETWORK = "ropsten";
-
-// Grab from https://github.com/terra-money/shuttle/blob/main/TERRA_ASSET.md#usage-instructions
-const SHUTTLE_TO_TERRA_ADDRESS = {
-  ropsten: "terra10a29fyas9768pw8mewdrar3kzr07jz8f3n73t3",
-};
+import {
+  NetworkType,
+  TERRA_NETWORKS,
+  TERRA_NETWORK_CHAIN_IDS,
+} from "../constants";
 
 const MIN_FEE = new Coin("uusd", new Int(1 * TERRA_DECIMAL));
 
@@ -31,12 +29,12 @@ export interface EstTx {
 
 export async function TerraToEth(
   uusdDec: string,
-  {
-    ethereumContext,
-    terraContext,
-  }: { ethereumContext: EthereumContextProps; terraContext: TerraContextProps }
+  { ethereumContext, terraContext }: WalletContexts
 ): Promise<EstTx> {
-  const { address } = terraContext;
+  const { address, networkType } = terraContext;
+  if (!networkType) {
+    throw new Error("No network type selected.");
+  }
   if (!address) {
     throw new Error("No address found.");
   }
@@ -52,7 +50,7 @@ export async function TerraToEth(
   // https://docs.terra.money/dev/#currency-denominations
   const msg = new MsgSend(
     address,
-    SHUTTLE_TO_TERRA_ADDRESS[ETH_TARGET_NETWORK],
+    TERRA_NETWORKS[networkType].shuttle.ethereum,
     new Coins([amountToConvert])
   );
 
@@ -64,7 +62,7 @@ export async function TerraToEth(
   };
   // Fee calculation is a PITA
   // See https://github.com/terra-money/bridge-web-app/blob/060979b7966d66368d54819a7c83f68949e71014/src/hooks/useSend.ts#L139-L197
-  const terra = getLCDClient();
+  const terra = getLCDClient(terraContext);
   const estTx = await terra.tx.create(address, estTxOptions);
   const estimatedFee = await terra.tx.estimateFee(estTx);
   console.log("estimated gas needed", estimatedFee.gas);
@@ -140,4 +138,20 @@ export async function WaitForBalanceChange({ terraContext }: WalletContexts) {
   }
   console.debug("Done waiting");
   return;
+}
+
+export function getLCDClient({
+  networkType,
+}: {
+  networkType: NetworkType | null;
+}) {
+  if (!networkType) {
+    throw new Error("No network type selected.");
+  }
+  const URL = TERRA_NETWORKS[networkType].lcd;
+  const chainID = TERRA_NETWORK_CHAIN_IDS[networkType];
+  return new LCDClient({
+    URL,
+    chainID,
+  });
 }

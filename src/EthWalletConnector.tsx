@@ -1,7 +1,8 @@
 import React, { createContext, useEffect, useState } from "react";
 import { Box, Button } from "@chakra-ui/react";
-
 import { ethers, utils, BigNumber } from "ethers";
+
+import { NetworkType } from "./constants";
 import { ERC20_ABI } from "./erc20";
 
 // Assume this is injected by Metamask
@@ -24,6 +25,7 @@ export type EthereumContextProps = {
   provider: ethers.providers.Web3Provider | null;
   signer: ethers.providers.JsonRpcSigner | null;
   refreshBalance: () => void;
+  networkType: NetworkType | null;
 };
 
 export const EthereumContext = createContext<EthereumContextProps>({
@@ -32,9 +34,11 @@ export const EthereumContext = createContext<EthereumContextProps>({
   provider: null,
   signer: null,
   refreshBalance: () => {},
+  networkType: null,
 });
 
 type Props = {
+  networkType: NetworkType;
   onChange: (e: EthereumContextProps) => void;
 };
 
@@ -50,7 +54,7 @@ function printBalance(bal: Balance | null) {
 
 const CONNECTED_KEY = "eth_connected";
 
-export function EthWalletConnector({ onChange }: Props) {
+export function EthWalletConnector({ networkType, onChange }: Props) {
   const [publicAddress, setPublicAddress] = useState<string | null>(null);
   const [USTBalance, setUSTBalance] = useState<Balance | null>(null);
   const [providerAndSigner, setProviderAndSigner] = useState<{
@@ -107,8 +111,9 @@ export function EthWalletConnector({ onChange }: Props) {
       provider: providerAndSigner?.provider || null,
       signer: providerAndSigner?.signer || null,
       refreshBalance,
+      networkType,
     });
-  }, [onChange, USTBalance, publicAddress, providerAndSigner]);
+  }, [onChange, USTBalance, publicAddress, providerAndSigner, networkType]);
 
   return (
     <Box>
