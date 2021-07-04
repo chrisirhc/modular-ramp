@@ -52,7 +52,9 @@ export function WalletConnector({ children }: Props) {
             bg={networkType === "mainnet" ? "red.500" : "transparent"}
           >
             {NETWORK_TYPE_OPTIONS.map((networkType) => (
-              <option value={networkType}>{NETWORK_TYPES[networkType]}</option>
+              <option key={networkType} value={networkType}>
+                {NETWORK_TYPES[networkType]}
+              </option>
             ))}
           </Select>
         </Box>

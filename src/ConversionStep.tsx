@@ -80,7 +80,7 @@ export function AllSteps() {
       <VStack divider={<StackDivider borderColor="gray.200" />} spacing={4}>
         {steps.map((step, i) =>
           i === 0 ? (
-            <Box>
+            <Box key={0}>
               <StepForm
                 output={step}
                 onChange={(output) => setSteps([output, ...steps.slice(1)])}
@@ -164,7 +164,7 @@ export function StepForm({
             }
           >
             {BLOCKCHAIN_OPTIONS.map((blockChainOption) => (
-              <option value={blockChainOption}>
+              <option key={blockChainOption} value={blockChainOption}>
                 {BlockChain[blockChainOption]}
               </option>
             ))}
