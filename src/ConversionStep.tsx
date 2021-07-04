@@ -45,6 +45,7 @@ import {
 } from "./operations/ethereum";
 import { estimate as OneInchEstimate } from "./operations/1inch";
 import { BlockChain, BlockChainType, BLOCKCHAIN_OPTIONS } from "./constants";
+import { WalletContexts } from "./types";
 
 class Currency {
   network: BlockChainType | null = null;
@@ -359,10 +360,7 @@ async function estimate(
 async function estimateStep(
   input: Currency,
   output: Currency,
-  {
-    terraContext,
-    ethereumContext,
-  }: { terraContext: TerraContextProps; ethereumContext: EthereumContextProps }
+  { terraContext, ethereumContext }: WalletContexts
 ): Promise<ExecutionStep> {
   if (input.network === "terra" && output.network === "ethereum") {
     // To Shuttle
