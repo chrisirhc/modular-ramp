@@ -443,8 +443,9 @@ async function execute({
   const statuses: Status[] = [];
   for (let i = 0; i < executionSteps.length; i++) {
     const step = executionSteps[i];
+    const currStep = i;
     const onProgress = (status: Status) => {
-      statuses[i] = status;
+      statuses[currStep] = status;
       onStatusesChange(statuses);
     };
     onProgress("Initiating step...");
