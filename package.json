@@ -1,5 +1,6 @@
 {
-  "name": "ust-to-usdc",
+  "name": "modular-ramp",
+  "homepage": "https://chrisirhc.github.io/modular-ramp",
   "private": true,
   "dependencies": {
     "@chakra-ui/react": "^1.6.4",
