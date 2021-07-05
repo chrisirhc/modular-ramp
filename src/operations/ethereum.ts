@@ -163,8 +163,13 @@ export async function waitForShuttle({ ethereumContext }: WalletContexts) {
   return new Promise((resolve) => {
     // Look for transfers to the target address
     // Since it's bridged, this is minted (i.e. fromAddress=0x0).
+    const address = UST_CONTRACT[networkType];
+    console.debug(
+      `Waiting for contract (${address}) transfer() activity to `,
+      publicAddress
+    );
     const filter = {
-      address: UST_CONTRACT[networkType],
+      address,
       topics: [
         utils.id("Transfer(address,address,uint256)"),
         utils.hexZeroPad("0x0", 32 /* length of these fields */),
