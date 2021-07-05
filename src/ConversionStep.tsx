@@ -430,12 +430,18 @@ async function execute({
   ethereumContext,
   onStatusesChange,
 }: executeArg) {
-  const statuses: Status[] = [];
+  let statuses: Status[] = [];
   for (let i = 0; i < executionSteps.length; i++) {
     const step = executionSteps[i];
     const currStep = i;
+    // eslint-disable-next-line no-loop-func
     const onProgress = (status: Status) => {
-      statuses[currStep] = status;
+      statuses = [
+        ...statuses.slice(0, currStep),
+        status,
+        ...statuses.slice(currStep + 1),
+      ];
+      console.debug("onProgress:", status);
       onStatusesChange(statuses);
     };
     onProgress("Initiating step...");
