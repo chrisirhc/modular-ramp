@@ -1,4 +1,4 @@
-import { ethers, utils, BigNumber, providers } from "ethers";
+import { utils } from "ethers";
 import { EthereumContextProps } from "../EthWalletConnector";
 import { PrepTx, UST_CONTRACT } from "./ethereum";
 

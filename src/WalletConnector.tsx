@@ -1,5 +1,5 @@
-import React, { createContext, useEffect, useRef, useState } from "react";
-import { Box, Button, HStack, Select, Wrap, WrapItem } from "@chakra-ui/react";
+import React, { useState } from "react";
+import { Box, Select, Wrap, WrapItem } from "@chakra-ui/react";
 import {
   DEFAULT_NETWORK_TYPE,
   NetworkType,
