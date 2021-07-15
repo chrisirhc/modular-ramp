@@ -108,12 +108,17 @@ export async function Run(
     return;
   }
 
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     extension.post({
       ...estTx.estTx,
       fee: estTx.estFees,
     });
     extension.once("onPost", (payload) => {
+      if (payload.error) {
+        reject(payload);
+        onProgress("Transaction failed.");
+        return;
+      }
       console.log(payload);
       resolve(payload);
       onProgress(`Transaction ID: ${payload.id}, Success: ${payload.success}`);
