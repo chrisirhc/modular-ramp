@@ -121,12 +121,19 @@ export function TerraWalletConnector({ networkType, onChange }: Props) {
   }, [onChange, extension, wallet, balance, networkType, connectInfo]);
 
   const uusdBal = balance && balance.get("uusd");
+  const networkMismatch =
+    connectInfo && TERRA_NETWORKS[networkType].lcd !== connectInfo.lcd;
 
   return (
     <Box>
       <Button onClick={connect} disabled={Boolean(wallet)}>
         {wallet ? `Connected` : "Connect"} to Terra
       </Button>
+      {networkMismatch ? (
+        <Box ps={2} color="red">
+          Network mismatch.
+        </Box>
+      ) : null}
       <Box ps={2}>
         <small>
           {wallet}
