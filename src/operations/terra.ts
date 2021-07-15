@@ -25,6 +25,7 @@ export interface EstTx {
   estTx: CreateTxOptions;
   estFees: StdFee;
   relayingFee: Coin;
+  estOutputAmount: string;
 }
 
 export async function TerraToEth(
@@ -88,6 +89,10 @@ export async function TerraToEth(
     estTx: estTxOptions,
     estFees: fullFee,
     relayingFee,
+    estOutputAmount: amountToConvert
+      .sub(relayingFee)
+      .div(TERRA_DECIMAL)
+      .amount.toString(),
   };
 }
 

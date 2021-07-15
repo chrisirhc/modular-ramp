@@ -122,6 +122,9 @@ export function StepForm({
   onAddStep,
   onRemoveStep,
 }: StepFormProps) {
+  const terraContext = useContext(TerraContext);
+  const ethereumContext = useContext(EthereumContext);
+
   const setNetwork = (network: BlockChainType) => {
     onChange({
       ...output,
@@ -142,6 +145,25 @@ export function StepForm({
       amount,
     });
   };
+
+  useEffect(() => {
+    if (!input || !output) {
+      return;
+    }
+    const estStep = estimateStep(input, output, {
+      terraContext,
+      ethereumContext,
+    });
+    estStep
+      .then((e) => {
+        if (!output.amount && e.info.outputAmount) {
+          setAmount(e.info.outputAmount);
+        }
+      })
+      .catch((e) => {
+        console.debug(e);
+      });
+  }, [input, output, terraContext, ethereumContext]);
 
   // No constraints, pick whatever you want and handle the estimates
   return (
@@ -267,6 +289,16 @@ export function TransactionSummary({
     null
   );
 
+  useEffect(() => {
+    const est = estimate(
+      { steps, terraContext, ethereumContext },
+      setExecutionSteps
+    );
+    est.catch((e) => {
+      console.debug(e);
+    });
+  }, [steps, terraContext, ethereumContext]);
+
   const bg = useColorModeValue("teal.100", "teal.800");
   return (
     <VStack bg={bg} m={5} p={2} borderRadius="md" align="start">
@@ -320,16 +352,20 @@ type estimateArg = {
   ethereumContext: EthereumContextProps;
 };
 
+interface ExecutionStepInfo {
+  outputAmount?: string;
+}
+
 type ExecutionStep =
   | {
       network: "eth";
       args: EthereumRunArg;
-      info: {};
+      info: ExecutionStepInfo;
     }
   | {
       network: "terra";
       args: TerraRunArg;
-      info: {};
+      info: ExecutionStepInfo;
     };
 
 async function estimate(
@@ -366,7 +402,9 @@ async function estimateStep(
     return {
       network: "terra",
       args: estTx,
-      info: estTx,
+      info: {
+        outputAmount: estTx.estOutputAmount,
+      },
     };
   } else if (input.network === "ethereum" && output.network === "terra") {
     if (!input.amount) {
@@ -380,7 +418,7 @@ async function estimateStep(
     return {
       network: "eth",
       args: estTx,
-      info: estTx,
+      info: {},
     };
   } else if (input.network === "ethereum" && output.network === "ethereum") {
     if (!input.amount) {
