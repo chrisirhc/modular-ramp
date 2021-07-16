@@ -1,16 +1,15 @@
 import React, { createContext, useEffect, useState } from "react";
 import { Box, Button } from "@chakra-ui/react";
-import { ethers, utils, BigNumber } from "ethers";
+import { ethers, utils, BigNumber, providers } from "ethers";
+import detectEthereumProvider from "@metamask/detect-provider";
 
 import { NetworkType } from "./constants";
 import { ERC20_ABI } from "./erc20";
 
-// Assume this is injected by Metamask
-declare global {
-  interface Window {
-    ethereum: any;
-  }
-}
+const CHAIN_ID: Record<NetworkType, string> = {
+  testnet: "0x3",
+  mainnet: "0x1",
+};
 
 // From https://github.com/terra-money/shuttle/blob/main/TERRA_ASSET.md#erc20-contracts
 const UST_CONTRACT: Record<NetworkType, string> = {
@@ -64,6 +63,7 @@ export function EthWalletConnector({ networkType, onChange }: Props) {
     useState<boolean>(true);
 
   useEffect(() => {
+    init();
     if (sessionStorage.getItem(CONNECTED_KEY) === CONNECTED_KEY) {
       connect();
     }
@@ -136,8 +136,48 @@ export function EthWalletConnector({ networkType, onChange }: Props) {
     </Box>
   );
 
+  async function init() {
+    const provider = await detectEthereumProvider();
+
+    if (provider) {
+      // If the provider returned by detectEthereumProvider is not the same as
+      // window.ethereum, something is overwriting it, perhaps another wallet.
+      if (provider !== window.ethereum) {
+        console.error("Do you have multiple wallets installed?");
+      }
+    } else {
+      console.log("Please install MetaMask!");
+    }
+
+    const ethereumT = window.ethereum;
+    if (!ethereumT) {
+      return;
+    }
+    type MetaMaskProvider = providers.ExternalProvider & {
+      on: (e: string, f: (_: any) => void) => void;
+    };
+    const ethereum: MetaMaskProvider = ethereumT as MetaMaskProvider;
+    if (!ethereum.request) {
+      return;
+    }
+
+    const chainId = await ethereum.request({ method: "eth_chainId" });
+    if (chainId !== CHAIN_ID[networkType]) {
+      console.error("Network chosen does not match Eth network");
+    }
+
+    ethereum.on("chainChanged", handleChainChanged);
+
+    function handleChainChanged(_chainId: any) {
+      // We recommend reloading the page, unless you must do otherwise
+      window.location.reload();
+    }
+  }
+
   async function connect() {
-    // Only works with Metamask right now.
+    if (!window.ethereum) {
+      return;
+    }
     const provider = new ethers.providers.Web3Provider(window.ethereum);
     const signer = provider.getSigner();
     setProviderAndSigner({

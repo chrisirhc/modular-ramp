@@ -6,6 +6,7 @@
     "@chakra-ui/react": "^1.6.4",
     "@emotion/react": "^11",
     "@emotion/styled": "^11",
+    "@metamask/detect-provider": "^1.2.0",
     "@terra-money/terra.js": "^1.8.4",
     "@testing-library/jest-dom": "^5.11.4",
     "@testing-library/react": "^11.1.0",
