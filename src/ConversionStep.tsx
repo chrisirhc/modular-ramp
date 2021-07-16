@@ -97,9 +97,9 @@ export function AllSteps() {
               }
               onAddStep={() =>
                 setSteps([
-                  ...steps.slice(0, i),
+                  ...steps.slice(0, i + 1),
                   new Currency(),
-                  ...steps.slice(i),
+                  ...steps.slice(i + 1),
                 ])
               }
               onRemoveStep={() =>
