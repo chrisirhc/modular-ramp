@@ -8,7 +8,7 @@ import {
   Int,
   LCDClient,
 } from "@terra-money/terra.js";
-import { TERRA_DECIMAL } from "../utils";
+import { printTerraAmount, TERRA_DECIMAL } from "../utils";
 import { RefreshBalanceRet, TerraContextProps } from "../TerraWalletConnector";
 import { WalletContexts } from "../types";
 import {
@@ -89,10 +89,7 @@ export async function TerraToEth(
     estTx: estTxOptions,
     estFees: fullFee,
     relayingFee,
-    estOutputAmount: amountToConvert
-      .sub(relayingFee)
-      .div(TERRA_DECIMAL)
-      .amount.toString(),
+    estOutputAmount: printTerraAmount(amountToConvert.sub(relayingFee)),
   };
 }
 
