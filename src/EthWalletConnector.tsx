@@ -55,6 +55,7 @@ const CONNECTED_KEY = "eth_connected";
 export function EthWalletConnector({ networkType, onChange }: Props) {
   const [publicAddress, setPublicAddress] = useState<string | null>(null);
   const [USTBalance, setUSTBalance] = useState<Balance | null>(null);
+  const [chainId, setChainId] = useState<string | null>(null);
   const [providerAndSigner, setProviderAndSigner] = useState<{
     provider: ethers.providers.Web3Provider | null;
     signer: ethers.providers.JsonRpcSigner | null;
@@ -118,11 +119,17 @@ export function EthWalletConnector({ networkType, onChange }: Props) {
     });
   }, [onChange, USTBalance, publicAddress, providerAndSigner, networkType]);
 
+  const networkMismatch = chainId !== CHAIN_ID[networkType];
   return (
     <Box>
       <Button onClick={connect} disabled={Boolean(publicAddress)}>
         {publicAddress ? `Connected` : "Connect"} to Ethereum
       </Button>
+      {networkMismatch ? (
+        <Box ps={2} color="red">
+          Network mismatch.
+        </Box>
+      ) : null}
       <Box ps={2}>
         <small>
           {publicAddress}
@@ -165,6 +172,7 @@ export function EthWalletConnector({ networkType, onChange }: Props) {
     if (chainId !== CHAIN_ID[networkType]) {
       console.error("Network chosen does not match Eth network");
     }
+    setChainId(chainId);
 
     ethereum.on("chainChanged", handleChainChanged);
 
