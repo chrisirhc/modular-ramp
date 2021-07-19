@@ -39,12 +39,16 @@ export function TerraToEthStep({ isToExecute }: StepProps) {
   const [amount, setAmount] = useState<string>("0");
   const [estTx, setEstTx] = useState<EstTx>();
   const [status, setStatus] = useState<string>("");
-  const lastEstTx = useRef(null);
+  const [txInProgress, setTxInProgress] = useState<EstTx>();
 
   useEffect(() => {
     // To Shuttle
     if (!amount) {
       throw new Error("No input amount");
+    }
+    // Don't run this if amount didn't change from the past estimate
+    if (amount === estTx?.amountStr) {
+      return;
     }
     let canceled = false;
     setEstTx(undefined);
@@ -67,15 +71,28 @@ export function TerraToEthStep({ isToExecute }: StepProps) {
     return () => {
       canceled = true;
     };
-  }, [amount, ethereumContext, terraContext]);
+  }, [amount, estTx, ethereumContext, terraContext]);
 
   useEffect(() => {
     if (isToExecute && estTx) {
       // Kick off execution
-      console.log("executing the step");
-      run({ estTx, terraContext, ethereumContext, onProgress: setStatus });
+      if (txInProgress === estTx) {
+        return;
+      }
+      console.debug("Executing tx", estTx);
+      setTxInProgress(estTx);
+      run({
+        estTx,
+        terraContext,
+        ethereumContext,
+        onProgress: setStatus,
+      }).catch((e) => {
+        console.error("Error in transaction", e);
+        setStatus("");
+        setTxInProgress(undefined);
+      });
     }
-  }, [isToExecute, estTx, terraContext, ethereumContext]);
+  }, [isToExecute, estTx, txInProgress, terraContext, ethereumContext]);
 
   /*
   isToExecute starts the execution and updates the progress here.

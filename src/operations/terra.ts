@@ -22,6 +22,7 @@ const MIN_FEE = new Coin("uusd", new Int(1 * TERRA_DECIMAL));
 export interface EstTx {
   network: "terra";
   amount: Coin;
+  amountStr: string;
   estTx: CreateTxOptions;
   estFees: StdFee;
   relayingFee: Coin;
@@ -86,6 +87,7 @@ export async function TerraToEth(
   return {
     network: "terra",
     amount: amountToConvert,
+    amountStr: uusdDec,
     estTx: estTxOptions,
     estFees: fullFee,
     relayingFee,
