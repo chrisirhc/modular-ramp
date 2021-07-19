@@ -1,24 +1,10 @@
 import React, { useContext, useEffect, useState } from "react";
 import {
-  Button,
   FormControl,
   FormLabel,
-  Select,
   Input,
   InputGroup,
   InputRightElement,
-  VStack,
-  StackDivider,
-  Box,
-  HStack,
-  Heading,
-  Code,
-  Accordion,
-  AccordionItem,
-  AccordionButton,
-  AccordionPanel,
-  Spinner,
-  useColorModeValue,
 } from "@chakra-ui/react";
 
 import { EthereumContext, EthereumContextProps } from "./EthWalletConnector";
@@ -46,7 +32,37 @@ export interface StepProps {
 }
 
 export function TerraToEthStep({ isToExecute }: StepProps) {
+  const terraContext = useContext(TerraContext);
+  const ethereumContext = useContext(EthereumContext);
   const [amount, setAmount] = useState<string>("0");
+  const [estTx, setEstTx] = useState<{}>();
+
+  useEffect(() => {
+    // To Shuttle
+    if (!amount) {
+      throw new Error("No input amount");
+    }
+    let canceled = false;
+    TerraToEth(amount, {
+      terraContext,
+      ethereumContext,
+    }).then(
+      (tx) => {
+        if (canceled) {
+          return;
+        }
+        setEstTx(tx);
+        console.debug("New estimated tx", tx);
+      },
+      (e) => {
+        console.error("Error", e);
+      }
+    );
+
+    return () => {
+      canceled = true;
+    };
+  }, [amount, ethereumContext, terraContext]);
 
   useEffect(() => {
     if (isToExecute) {
@@ -58,25 +74,6 @@ export function TerraToEthStep({ isToExecute }: StepProps) {
   /*
   isToExecute starts the execution and updates the progress here.
   */
-
-  // useEffect(() => {
-  //   if (!input || !output) {
-  //     return;
-  //   }
-  //   const estStep = estimateStep(input, output, {
-  //     terraContext,
-  //     ethereumContext,
-  //   });
-  //   estStep
-  //     .then((e) => {
-  //       if (!output.amount && e.info.outputAmount) {
-  //         setAmount(e.info.outputAmount);
-  //       }
-  //     })
-  //     .catch((e) => {
-  //       console.debug(e);
-  //     });
-  // }, [input, output, terraContext, ethereumContext]);
 
   // No constraints, pick whatever you want and handle the estimates
   return (
