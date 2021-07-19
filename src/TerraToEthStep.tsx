@@ -1,10 +1,11 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useEffect, useState, useRef } from "react";
 import {
   FormControl,
   FormLabel,
   Input,
   InputGroup,
   InputRightElement,
+  Spinner,
 } from "@chakra-ui/react";
 
 import { EthereumContext, EthereumContextProps } from "./EthWalletConnector";
@@ -14,6 +15,7 @@ import {
   Run as TerraRun,
   RunArg as TerraRunArg,
   WaitForBalanceChange,
+  EstTx,
 } from "./operations/terra";
 import {
   EthToTerra,
@@ -35,7 +37,9 @@ export function TerraToEthStep({ isToExecute }: StepProps) {
   const terraContext = useContext(TerraContext);
   const ethereumContext = useContext(EthereumContext);
   const [amount, setAmount] = useState<string>("0");
-  const [estTx, setEstTx] = useState<{}>();
+  const [estTx, setEstTx] = useState<EstTx>();
+  const [status, setStatus] = useState<string>("");
+  const lastEstTx = useRef(null);
 
   useEffect(() => {
     // To Shuttle
@@ -43,6 +47,7 @@ export function TerraToEthStep({ isToExecute }: StepProps) {
       throw new Error("No input amount");
     }
     let canceled = false;
+    setEstTx(undefined);
     TerraToEth(amount, {
       terraContext,
       ethereumContext,
@@ -65,11 +70,12 @@ export function TerraToEthStep({ isToExecute }: StepProps) {
   }, [amount, ethereumContext, terraContext]);
 
   useEffect(() => {
-    if (isToExecute) {
+    if (isToExecute && estTx) {
       // Kick off execution
       console.log("executing the step");
+      run({ estTx, terraContext, ethereumContext, onProgress: setStatus });
     }
-  }, [isToExecute]);
+  }, [isToExecute, estTx, terraContext, ethereumContext]);
 
   /*
   isToExecute starts the execution and updates the progress here.
@@ -99,6 +105,31 @@ export function TerraToEthStep({ isToExecute }: StepProps) {
           />
         </InputGroup>
       </FormControl>
+      {status ? (
+        <>
+          <Spinner />
+          {status}
+        </>
+      ) : null}
     </>
   );
+}
+
+async function run({
+  estTx,
+  terraContext,
+  ethereumContext,
+  onProgress,
+}: {
+  estTx: EstTx;
+  terraContext: TerraContextProps;
+  ethereumContext: EthereumContextProps;
+  onProgress: (status: string) => void;
+}) {
+  await TerraRun(estTx, { terraContext, onProgress });
+  terraContext.refreshBalance();
+  onProgress("Waiting for transaction on Eth side");
+  await EthWaitForShuttle({ ethereumContext, terraContext });
+  ethereumContext.refreshBalance();
+  onProgress("Waiting for transaction on Eth side");
 }
