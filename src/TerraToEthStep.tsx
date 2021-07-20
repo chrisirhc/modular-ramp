@@ -17,9 +17,13 @@ import { waitForShuttle as EthWaitForShuttle } from "./operations/ethereum";
 // That can be a new future feature if needed.
 export interface StepProps {
   isToExecute: boolean;
+  onExecuted?: (status: string) => void;
 }
 
-export function TerraToEthStep({ isToExecute }: StepProps) {
+export function TerraToEthStep({
+  isToExecute,
+  onExecuted = () => {},
+}: StepProps) {
   const terraContext = useContext(TerraContext);
   const ethereumContext = useContext(EthereumContext);
   const [amount, setAmount] = useState<string>("0");
@@ -102,6 +106,13 @@ export function TerraToEthStep({ isToExecute }: StepProps) {
       }
     );
   }, [isToExecute, status, estTx, terraContext, ethereumContext]);
+
+  useEffect(() => {
+    if (!status) {
+      return;
+    }
+    onExecuted(status);
+  }, [status, onExecuted]);
 
   // No constraints, pick whatever you want and handle the estimates
   return (
