@@ -10,22 +10,8 @@ import {
 
 import { EthereumContext, EthereumContextProps } from "./EthWalletConnector";
 import { TerraContext, TerraContextProps } from "./TerraWalletConnector";
-import {
-  TerraToEth,
-  Run as TerraRun,
-  RunArg as TerraRunArg,
-  WaitForBalanceChange,
-  EstTx,
-} from "./operations/terra";
-import {
-  EthToTerra,
-  Run as EthereumRun,
-  RunArg as EthereumRunArg,
-  waitForShuttle as EthWaitForShuttle,
-} from "./operations/ethereum";
-import { estimate as OneInchEstimate } from "./operations/1inch";
-import { BlockChain, BlockChainType, BLOCKCHAIN_OPTIONS } from "./constants";
-import { WalletContexts } from "./types";
+import { TerraToEth, Run as TerraRun, EstTx } from "./operations/terra";
+import { waitForShuttle as EthWaitForShuttle } from "./operations/ethereum";
 
 // TODO: Does the ConversionStep's state need to be centrally managed? Guess not.
 // That can be a new future feature if needed.
@@ -39,31 +25,38 @@ export function TerraToEthStep({ isToExecute }: StepProps) {
   const [amount, setAmount] = useState<string>("0");
   const [estTx, setEstTx] = useState<EstTx>();
   const [status, setStatus] = useState<string>("");
-  const [txInProgress, setTxInProgress] = useState<EstTx>();
+  const [progress, setProgress] = useState<string>("");
+  const txRef = useRef<EstTx>();
 
+  // Run estimates on the amount
   useEffect(() => {
     // To Shuttle
     if (!amount) {
-      throw new Error("No input amount");
+      return;
     }
     // Don't run this if amount didn't change from the past estimate
+    // TODO: Is this really necessary? Seems like an effect of not using the right abstractions.
     if (amount === estTx?.amountStr) {
       return;
     }
     let canceled = false;
-    setEstTx(undefined);
     TerraToEth(amount, {
       terraContext,
       ethereumContext,
     }).then(
       (tx) => {
         if (canceled) {
+          console.debug("Canceled estimation", amount);
           return;
         }
         setEstTx(tx);
         console.debug("New estimated tx", tx);
       },
       (e) => {
+        if (canceled) {
+          console.debug("Canceled estimation failed", amount, e);
+          return;
+        }
         console.error("Error", e);
       }
     );
@@ -74,29 +67,41 @@ export function TerraToEthStep({ isToExecute }: StepProps) {
   }, [amount, estTx, ethereumContext, terraContext]);
 
   useEffect(() => {
-    if (isToExecute && estTx) {
-      // Kick off execution
-      if (txInProgress === estTx) {
-        return;
-      }
-      console.debug("Executing tx", estTx);
-      setTxInProgress(estTx);
-      run({
-        estTx,
-        terraContext,
-        ethereumContext,
-        onProgress: setStatus,
-      }).catch((e) => {
-        console.error("Error in transaction", e);
-        setStatus("");
-        setTxInProgress(undefined);
-      });
+    if (!isToExecute) {
+      return;
     }
-  }, [isToExecute, estTx, txInProgress, terraContext, ethereumContext]);
-
-  /*
-  isToExecute starts the execution and updates the progress here.
-  */
+    // No transaction estimate yet
+    if (!estTx) {
+      return;
+    }
+    // Has a status so status hasn't been reset.
+    if (status) {
+      return;
+    }
+    // Transaction in progress
+    if (txRef.current === estTx) {
+      return;
+    }
+    txRef.current = estTx;
+    console.debug("Executing tx", estTx);
+    setProgress("Sending Transaction");
+    run({
+      estTx,
+      terraContext,
+      ethereumContext,
+      onProgress: setProgress,
+    }).then(
+      () => {
+        setStatus("Success");
+        setProgress("");
+      },
+      (e) => {
+        console.error("Error in transaction", e);
+        setStatus("Failed");
+        setProgress("");
+      }
+    );
+  }, [isToExecute, status, estTx, terraContext, ethereumContext]);
 
   // No constraints, pick whatever you want and handle the estimates
   return (
@@ -111,6 +116,7 @@ export function TerraToEthStep({ isToExecute }: StepProps) {
             pr="4.5rem"
             min="0"
             value={amount || ""}
+            disabled={isToExecute}
             onChange={(event) => setAmount(event.target.value)}
           />
           <InputRightElement
@@ -122,12 +128,8 @@ export function TerraToEthStep({ isToExecute }: StepProps) {
           />
         </InputGroup>
       </FormControl>
-      {status ? (
-        <>
-          <Spinner />
-          {status}
-        </>
-      ) : null}
+      {progress ? <Spinner /> : null}
+      {progress || status}
     </>
   );
 }
