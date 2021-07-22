@@ -1,7 +1,8 @@
 import React from "react";
 import { Story, Meta } from "@storybook/react";
 import { WalletConnector } from "./WalletConnector";
-import { TerraToEthStep, StepProps } from "./TerraToEthStep";
+import { StepProps } from "./types";
+import { TerraToEthStep } from "./TerraToEthStep";
 import { ChakraProvider } from "@chakra-ui/react";
 
 export default {
@@ -19,5 +20,5 @@ const Template: Story<StepProps> = (args, { argTypes }) => (
   </ChakraProvider>
 );
 
-export const Primary = Template.bind({});
-Primary.args = {};
+export const Main = Template.bind({});
+Main.args = {};
