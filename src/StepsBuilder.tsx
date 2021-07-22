@@ -6,6 +6,7 @@ import {
   Flex,
   FormControl,
   FormLabel,
+  HStack,
   Input,
   InputGroup,
   InputRightElement,
@@ -57,6 +58,14 @@ function StepSelector(stepProps: StepProps) {
 
 export function StepsBuilder() {
   const [steps, setSteps] = useState<StepProps[]>([{ isToExecute: false }]);
+  const [isToExecute, setIsToExecute] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (isToExecute && !steps[0].isToExecute) {
+      setSteps([{ isToExecute: true }, ...steps.slice(1)]);
+    }
+  }, [isToExecute, steps]);
+
   return (
     <VStack
       bg="gray.100"
@@ -66,15 +75,32 @@ export function StepsBuilder() {
       borderRadius="md"
       m={5}
     >
-      {steps.map((s) => (
-        <StepSelector {...s} />
+      {steps.map((s, stepNumber) => (
+        <StepSelector
+          {...s}
+          onExecuted={() => {
+            if (isToExecute && steps[stepNumber + 1]) {
+              // Execute the next step
+              setSteps([
+                ...steps.slice(0, stepNumber + 1),
+                { isToExecute: true },
+                ...steps.slice(stepNumber + 2),
+              ]);
+            }
+          }}
+        />
       ))}
-      <Button
-        colorScheme="blue"
-        onClick={() => setSteps([...steps, { isToExecute: false }])}
-      >
-        Add Step
-      </Button>
+      <HStack>
+        <Button
+          colorScheme="blue"
+          onClick={() => setSteps([...steps, { isToExecute: false }])}
+        >
+          Add Step
+        </Button>
+        <Button colorScheme="green" onClick={() => setIsToExecute(true)}>
+          Execute
+        </Button>
+      </HStack>
     </VStack>
   );
 }
