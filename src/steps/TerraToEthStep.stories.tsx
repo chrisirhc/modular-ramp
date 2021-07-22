@@ -1,7 +1,7 @@
 import React from "react";
 import { Story, Meta } from "@storybook/react";
-import { WalletConnector } from "./WalletConnector";
-import { StepProps } from "./types";
+import { WalletConnector } from "../WalletConnector";
+import { StepProps } from "../types";
 import { TerraToEthStep } from "./TerraToEthStep";
 import { ChakraProvider } from "@chakra-ui/react";
 
