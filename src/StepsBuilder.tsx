@@ -2,6 +2,8 @@ import React, { useContext, useEffect, useState, useRef } from "react";
 import {
   Box,
   Button,
+  Center,
+  Flex,
   FormControl,
   FormLabel,
   Input,
@@ -24,17 +26,30 @@ interface StepComponentWrapper {
 function StepSelector(stepProps: StepProps) {
   const [Step, setStep] = useState<StepComponentWrapper>();
   return (
-    <Box>
-      <Select
-        onChange={(e) => setStep({ Component: STEPS[Number(e.target.value)] })}
-        placeholder="Select Step"
-      >
-        {STEPS.map((Step, i) => (
-          <option key={i} value={i}>
-            {Step.stepTitle}
-          </option>
-        ))}
-      </Select>
+    <Box
+      bg="gray.50"
+      p={4}
+      shadow="md"
+      borderWidth="1px"
+      borderRadius="md"
+      m={2}
+    >
+      <Flex>
+        <Select
+          onChange={(e) =>
+            setStep({ Component: STEPS[Number(e.target.value)] })
+          }
+          placeholder="Select Step"
+          mr="1"
+        >
+          {STEPS.map((Step, i) => (
+            <option key={i} value={i}>
+              {Step.stepTitle}
+            </option>
+          ))}
+        </Select>
+        <Button>X</Button>
+      </Flex>
       {Step?.Component ? <Step.Component {...stepProps} /> : null}
     </Box>
   );
@@ -42,13 +57,22 @@ function StepSelector(stepProps: StepProps) {
 
 export function StepsBuilder() {
   const [steps, setSteps] = useState<StepProps[]>([{ isToExecute: false }]);
-  console.log(steps);
   return (
-    <VStack>
+    <VStack
+      bg="gray.100"
+      p={4}
+      shadow="md"
+      borderWidth="1px"
+      borderRadius="md"
+      m={5}
+    >
       {steps.map((s) => (
         <StepSelector {...s} />
       ))}
-      <Button onClick={() => setSteps([...steps, { isToExecute: false }])}>
+      <Button
+        colorScheme="blue"
+        onClick={() => setSteps([...steps, { isToExecute: false }])}
+      >
         Add Step
       </Button>
     </VStack>
