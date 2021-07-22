@@ -1,19 +1,5 @@
-import React, { useContext, useEffect, useState, useRef, useMemo } from "react";
-import {
-  Box,
-  Button,
-  Center,
-  Flex,
-  FormControl,
-  FormLabel,
-  HStack,
-  Input,
-  InputGroup,
-  InputRightElement,
-  Select,
-  Spinner,
-  VStack,
-} from "@chakra-ui/react";
+import React, { useEffect, useState, useMemo } from "react";
+import { Box, Button, Flex, HStack, Select, VStack } from "@chakra-ui/react";
 
 import { STEPS } from "./steps";
 import { StepComponent, StepProps } from "./types";
