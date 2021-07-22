@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState, useRef } from "react";
+import React, { useContext, useEffect, useState, useRef, useMemo } from "react";
 import {
   Box,
   Button,
@@ -58,13 +58,41 @@ function StepSelector(stepProps: StepProps) {
 
 export function StepsBuilder() {
   const [steps, setSteps] = useState<StepProps[]>([{ isToExecute: false }]);
+  const [lastStepExecuted, setLastStepExecuted] = useState<number>(-1);
   const [isToExecute, setIsToExecute] = useState<boolean>(false);
 
   useEffect(() => {
-    if (isToExecute && !steps[0].isToExecute) {
-      setSteps([{ isToExecute: true }, ...steps.slice(1)]);
+    if (!isToExecute) {
+      return;
     }
-  }, [isToExecute, steps]);
+    if (!steps[0].isToExecute) {
+      setSteps([{ isToExecute: true }, ...steps.slice(1)]);
+      return;
+    }
+    if (
+      steps[lastStepExecuted + 1] &&
+      !steps[lastStepExecuted + 1].isToExecute
+    ) {
+      setSteps([
+        ...steps.slice(0, lastStepExecuted + 1),
+        { isToExecute: true },
+        ...steps.slice(lastStepExecuted + 1),
+      ]);
+    }
+  }, [isToExecute, steps, lastStepExecuted]);
+
+  const allSteps = useMemo(
+    () =>
+      steps.map((s, stepNumber) => (
+        <StepSelector
+          {...s}
+          onExecuted={() => {
+            setLastStepExecuted(stepNumber);
+          }}
+        />
+      )),
+    [steps]
+  );
 
   return (
     <VStack
@@ -75,21 +103,7 @@ export function StepsBuilder() {
       borderRadius="md"
       m={5}
     >
-      {steps.map((s, stepNumber) => (
-        <StepSelector
-          {...s}
-          onExecuted={() => {
-            if (isToExecute && steps[stepNumber + 1]) {
-              // Execute the next step
-              setSteps([
-                ...steps.slice(0, stepNumber + 1),
-                { isToExecute: true },
-                ...steps.slice(stepNumber + 2),
-              ]);
-            }
-          }}
-        />
-      ))}
+      {allSteps}
       <HStack>
         <Button
           colorScheme="blue"
