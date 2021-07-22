@@ -14,6 +14,8 @@ import { TerraContext, TerraContextProps } from "../TerraWalletConnector";
 import { WaitForBalanceChange } from "../operations/terra";
 import { Run as EthereumRun, EthToTerra, PrepTx } from "../operations/ethereum";
 
+EthToTerraStep.stepTitle = "Ethereum to Terra Bridge";
+
 export function EthToTerraStep({
   isToExecute,
   onExecuted = () => {},

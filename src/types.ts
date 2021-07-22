@@ -6,6 +6,10 @@ export type WalletContexts = {
   terraContext: TerraContextProps;
 };
 
+export interface StepComponent extends React.FunctionComponent<StepProps> {
+  stepTitle: string;
+}
+
 // TODO: Does the ConversionStep's state need to be centrally managed? Guess not.
 // That can be a new future feature if needed.
 export interface StepProps {
