@@ -1,7 +1,6 @@
 import React from "react";
 import { Story, Meta } from "@storybook/react";
 import { WalletConnector } from "./WalletConnector";
-import { StepProps } from "./types";
 import { StepsBuilder } from "./StepsBuilder";
 import { ChakraProvider } from "@chakra-ui/react";
 
@@ -10,7 +9,7 @@ export default {
   title: "StepsBuilder",
 } as Meta;
 
-const Template: Story<StepProps> = (args, { argTypes }) => (
+const Template: Story<{}> = (args, { argTypes }) => (
   <ChakraProvider>
     <div className="App">
       <WalletConnector>
