@@ -1,4 +1,10 @@
-import React, { useContext, useEffect, useState, useRef } from "react";
+import React, {
+  useContext,
+  useEffect,
+  useState,
+  useRef,
+  ChangeEventHandler,
+} from "react";
 import {
   FormControl,
   FormLabel,
@@ -112,6 +118,32 @@ export function TerraToEthStep({
 
   // No constraints, pick whatever you want and handle the estimates
   return (
+    <TerraToEthStepRender
+      amount={amount}
+      isToExecute={isToExecute}
+      onAmountChanged={(event) => setAmount(event.target.value)}
+      progress={progress}
+      status={status}
+    />
+  );
+}
+
+export interface TerraToEthStepRenderProps {
+  amount: string;
+  isToExecute: boolean;
+  onAmountChanged: ChangeEventHandler<HTMLInputElement>;
+  progress: string;
+  status: string;
+}
+
+export function TerraToEthStepRender({
+  amount,
+  isToExecute,
+  onAmountChanged,
+  progress,
+  status,
+}: TerraToEthStepRenderProps) {
+  return (
     <>
       <FormControl>
         Terra To Eth Step
@@ -124,7 +156,7 @@ export function TerraToEthStep({
             min="0"
             value={amount || ""}
             disabled={isToExecute}
-            onChange={(event) => setAmount(event.target.value)}
+            onChange={onAmountChanged}
           />
           <InputRightElement
             pointerEvents="none"
