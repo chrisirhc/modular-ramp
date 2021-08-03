@@ -15,4 +15,5 @@ export interface StepComponent extends React.FunctionComponent<StepProps> {
 export interface StepProps {
   isToExecute: boolean;
   onExecuted?: (status: string) => void;
+  onRemoveStep?: () => void;
 }

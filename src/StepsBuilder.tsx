@@ -1,5 +1,13 @@
 import React, { useEffect, useState, useMemo } from "react";
-import { Box, Button, Flex, HStack, Select, VStack } from "@chakra-ui/react";
+import {
+  Box,
+  Button,
+  Flex,
+  HStack,
+  Select,
+  slideFadeConfig,
+  VStack,
+} from "@chakra-ui/react";
 
 import { STEPS } from "./steps";
 import { StepComponent, StepProps } from "./types";
@@ -35,15 +43,24 @@ function StepSelector(stepProps: StepProps) {
             </option>
           ))}
         </Select>
-        <Button>X</Button>
+        <Button onClick={stepProps.onRemoveStep}>X</Button>
       </Flex>
       {Step?.Component ? <Step.Component {...stepProps} /> : null}
     </Box>
   );
 }
 
+let STEP_ID_COUNT = 0;
+function generateId() {
+  return STEP_ID_COUNT++;
+}
+
+function generateStep() {
+  return { key: generateId(), isToExecute: false };
+}
+
 export function StepsBuilder() {
-  const [steps, setSteps] = useState<StepProps[]>([{ isToExecute: false }]);
+  const [steps, setSteps] = useState<StepProps[]>(() => [generateStep()]);
   const [lastStepExecuted, setLastStepExecuted] = useState<number>(-1);
   const [isToExecute, setIsToExecute] = useState<boolean>(false);
 
@@ -52,7 +69,7 @@ export function StepsBuilder() {
       return;
     }
     if (!steps[0].isToExecute) {
-      setSteps([{ isToExecute: true }, ...steps.slice(1)]);
+      setSteps([generateStep(), ...steps.slice(1)]);
       return;
     }
     if (
@@ -61,7 +78,7 @@ export function StepsBuilder() {
     ) {
       setSteps([
         ...steps.slice(0, lastStepExecuted + 1),
-        { isToExecute: true },
+        generateStep(),
         ...steps.slice(lastStepExecuted + 1),
       ]);
     }
@@ -71,7 +88,14 @@ export function StepsBuilder() {
     () =>
       steps.map((s, stepNumber) => (
         <StepSelector
+          // Note that s contains s.key which sets this up.
           {...s}
+          onRemoveStep={() => {
+            setSteps([
+              ...steps.slice(0, stepNumber),
+              ...steps.slice(stepNumber + 1),
+            ]);
+          }}
           onExecuted={() => {
             setLastStepExecuted(stepNumber);
           }}
