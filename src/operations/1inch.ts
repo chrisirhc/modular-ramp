@@ -56,6 +56,7 @@ export async function estimate(
   const fromAddress = publicAddress;
   const slippage = 0.5;
   // TODO: Check back later
+  // Will return fail if it doesn't have allowance.
   const disableEstimate = true; // remove later
   const url = `https://api.1inch.exchange/v3.0/1/swap?fromTokenAddress=${fromTokenAddress}&toTokenAddress=${toTokenAddress}&amount=${amount}&fromAddress=${fromAddress}&slippage=${slippage}${
     disableEstimate ? "&disableEstimate=true" : ""
@@ -67,16 +68,9 @@ export async function estimate(
 
       /* Not yet tested */
       const { tx, fromToken, fromTokenAmount, toToken, toTokenAmount } = data;
-      // Ethers will fill these
-      delete tx.gas;
-      delete tx.gasPrice;
-
-      // Make value into hex per https://docs.1inch.io/api/nodejs-web3-example
-      const valueInt = parseInt(tx["value"]); //get the value from the transaction
-      const valueStr = "0x" + valueInt.toString(16); //add a leading 0x after converting from decimal to hexadecimal
-      tx["value"] = valueStr;
       return {
         info: {
+          amountString,
           fromToken,
           fromTokenAmount,
           toToken,
@@ -84,8 +78,21 @@ export async function estimate(
         },
         args: {
           type: "tx",
-          txArg: tx,
+          txArg: convertTxForTxArg(tx),
         },
       };
     });
+}
+
+export function convertTxForTxArg(rawTx: any) {
+  const tx = { ...rawTx };
+  // Ethers will fill these
+  delete tx.gas;
+  delete tx.gasPrice;
+
+  // Make value into hex per https://docs.1inch.io/api/nodejs-web3-example
+  const valueInt = parseInt(tx["value"]); //get the value from the transaction
+  const valueStr = "0x" + valueInt.toString(16); //add a leading 0x after converting from decimal to hexadecimal
+  tx["value"] = valueStr;
+  return tx;
 }

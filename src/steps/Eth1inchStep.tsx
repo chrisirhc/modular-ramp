@@ -1,5 +1,6 @@
 import React, { useContext, useEffect, useState, useRef } from "react";
 import {
+  Button,
   FormControl,
   FormLabel,
   Input,
@@ -14,8 +15,14 @@ import { TerraContext, TerraContextProps } from "../TerraWalletConnector";
 import {
   estimate as OneInchEstimate,
   Arg as EstimateArg,
+  convertTxForTxArg,
 } from "../operations/1inch";
-import { Run as EthereumRun, PrepTx } from "../operations/ethereum";
+import {
+  Run as EthereumRun,
+  PrepTx,
+  UST_CONTRACT,
+} from "../operations/ethereum";
+import { utils } from "ethers";
 
 Eth1inchStep.stepTitle = "Ethereum 1inch Transaction";
 
@@ -142,10 +149,38 @@ export function Eth1inchStep({
             children="UST"
           />
         </InputGroup>
+        <Button
+          onClick={() =>
+            approve(amount, { ethereumContext, onProgress: setProgress })
+          }
+        >
+          Approve
+        </Button>
       </FormControl>
       {progress ? <Spinner /> : null}
       {progress || status}
     </>
+  );
+}
+
+async function approve(
+  amountString: string,
+  {
+    ethereumContext,
+    onProgress,
+  }: {
+    ethereumContext: EthereumContextProps;
+    onProgress: (status: string) => void;
+  }
+) {
+  const amount = utils.parseEther(amountString);
+  const fromTokenAddress = UST_CONTRACT.mainnet;
+  const approveUrl = `https://api.1inch.exchange/v3.0/1/approve/calldata?amount=${amount}&tokenAddress=${fromTokenAddress}`;
+  const approveRequest = await fetch(approveUrl).then((r) => r.json());
+  const approveRequestTx = convertTxForTxArg(approveRequest);
+  await EthereumRun(
+    { type: "tx", txArg: approveRequestTx },
+    { ethereumContext, onProgress }
   );
 }
 
