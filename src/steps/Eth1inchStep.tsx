@@ -149,17 +149,30 @@ export function Eth1inchStep({
             children="UST"
           />
         </InputGroup>
-        <Button
-          onClick={() =>
-            approve(amount, { ethereumContext, onProgress: setProgress })
-          }
-        >
-          Approve
-        </Button>
       </FormControl>
+      <ApproveButton amount={amount} ethereumContext={ethereumContext} />
       {progress ? <Spinner /> : null}
       {progress || status}
     </>
+  );
+}
+
+function ApproveButton({
+  amount,
+  ethereumContext,
+}: {
+  amount: string;
+  ethereumContext: EthereumContextProps;
+}) {
+  const [progress, setProgress] = useState<string>("");
+  return (
+    <Button
+      onClick={() => {
+        approve(amount, { ethereumContext, onProgress: setProgress });
+      }}
+    >
+      {progress || "Approve"}
+    </Button>
   );
 }
 

@@ -86,8 +86,8 @@ export async function Run(
         onProgress("Transaction successful");
         return ret;
       } catch (e) {
-        onProgress(`Transaction failed ${e}`);
-        throw e;
+        onProgress(`Transaction failed: ${e?.message}`);
+        return;
       }
     case "shuttleBurn":
       if (!estTx.shuttleBurnArgs) {
