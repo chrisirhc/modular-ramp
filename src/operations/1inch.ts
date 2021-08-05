@@ -5,9 +5,15 @@ import { PrepTx, UST_CONTRACT } from "./ethereum";
 // https://etherscan.io/token/0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48
 const USDC_CONTRACT = "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48";
 
-type Arg = {
+export type Arg = {
   args: PrepTx;
-  info: {};
+  info: {
+    amountString: string;
+    fromToken: TokenResponse;
+    fromTokenAmount: string;
+    toToken: TokenResponse;
+    toTokenAmount: string;
+  };
 };
 
 interface TokenResponse {
