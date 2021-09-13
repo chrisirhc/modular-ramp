@@ -65,14 +65,16 @@ export function StepsBuilder() {
   const [isToExecute, setIsToExecute] = useState<boolean>(false);
 
   useEffect(() => {
+    // If it's to start executing
     if (!isToExecute) {
       return;
     }
     if (!steps[0].isToExecute) {
-      setSteps([generateStep(), ...steps.slice(1)]);
+      setSteps([{ ...steps[0], isToExecute: true }, ...steps.slice(1)]);
       return;
     }
     if (
+      lastStepExecuted >= 0 &&
       steps[lastStepExecuted + 1] &&
       !steps[lastStepExecuted + 1].isToExecute
     ) {
@@ -121,8 +123,12 @@ export function StepsBuilder() {
         >
           Add Step
         </Button>
-        <Button colorScheme="green" onClick={() => setIsToExecute(true)}>
-          Execute
+        <Button
+          colorScheme="green"
+          onClick={() => setIsToExecute(true)}
+          disabled={isToExecute}
+        >
+          {isToExecute ? "Executing" : "Execute"}
         </Button>
       </HStack>
     </VStack>
