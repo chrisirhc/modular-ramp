@@ -63,6 +63,7 @@ export function StepsBuilder() {
   const [steps, setSteps] = useState<StepProps[]>(() => [generateStep()]);
   const [lastStepExecuted, setLastStepExecuted] = useState<number>(-1);
   const [isToExecute, setIsToExecute] = useState<boolean>(false);
+  const isAllStepsExecuted = lastStepExecuted === steps.length - 1;
 
   useEffect(() => {
     // If it's to start executing
@@ -83,6 +84,7 @@ export function StepsBuilder() {
         generateStep(),
         ...steps.slice(lastStepExecuted + 1),
       ]);
+      return;
     }
   }, [isToExecute, steps, lastStepExecuted]);
 
@@ -128,7 +130,11 @@ export function StepsBuilder() {
           onClick={() => setIsToExecute(true)}
           disabled={isToExecute}
         >
-          {isToExecute ? "Executing" : "Execute"}
+          {isToExecute
+            ? isAllStepsExecuted
+              ? "Done"
+              : "Executing…"
+            : "Execute"}
         </Button>
       </HStack>
     </VStack>
