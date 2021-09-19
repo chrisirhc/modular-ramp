@@ -22,17 +22,12 @@ import { waitForShuttle as EthWaitForShuttle } from "../operations/ethereum";
 
 TerraToEthStep.stepTitle = "Terra to Ethereum Bridge";
 
-export function TerraToEthStep({
-  isToExecute,
-  onExecuted = () => {},
-}: StepProps) {
-  const terraContext = useContext(TerraContext);
-  const ethereumContext = useContext(EthereumContext);
-  const [amount, setAmount] = useState<string>("0");
+function useEstimateTx(
+  amount: string,
+  terraContext: TerraContextProps,
+  ethereumContext: EthereumContextProps
+) {
   const [estTx, setEstTx] = useState<EstTx>();
-  const [status, setStatus] = useState<string>("");
-  const [progress, setProgress] = useState<string>("");
-  const txRef = useRef<EstTx>();
 
   // Run estimates on the amount
   useEffect(() => {
@@ -72,6 +67,19 @@ export function TerraToEthStep({
     };
   }, [amount, estTx, ethereumContext, terraContext]);
 
+  return estTx;
+}
+
+function useExecuteTx(
+  isToExecute: boolean,
+  estTx: EstTx | undefined,
+  terraContext: TerraContextProps,
+  ethereumContext: EthereumContextProps
+) {
+  const [status, setStatus] = useState<string>("");
+  const [progress, setProgress] = useState<string>("");
+  const txRef = useRef<EstTx>();
+
   useEffect(() => {
     if (!isToExecute) {
       return;
@@ -84,8 +92,13 @@ export function TerraToEthStep({
     if (status) {
       return;
     }
-    // Transaction in progress
-    if (txRef.current === estTx) {
+    // Transaction already in progress
+    if (txRef.current) {
+      console.warn(
+        `${
+          txRef.current === estTx ? "Same" : "Different"
+        } transaction already in progress.`
+      );
       return;
     }
     txRef.current = estTx;
@@ -108,6 +121,24 @@ export function TerraToEthStep({
       }
     );
   }, [isToExecute, status, estTx, terraContext, ethereumContext]);
+
+  return [status, progress];
+}
+
+export function TerraToEthStep({
+  isToExecute,
+  onExecuted = () => {},
+}: StepProps) {
+  const terraContext = useContext(TerraContext);
+  const ethereumContext = useContext(EthereumContext);
+  const [amount, setAmount] = useState<string>("0");
+  const estTx = useEstimateTx(amount, terraContext, ethereumContext);
+  const [status, progress] = useExecuteTx(
+    isToExecute,
+    estTx,
+    terraContext,
+    ethereumContext
+  );
 
   useEffect(() => {
     if (!status) {
