@@ -7,6 +7,7 @@ import {
   Select,
   slideFadeConfig,
   VStack,
+  useColorModeValue,
 } from "@chakra-ui/react";
 
 import { STEPS } from "./steps";
@@ -20,15 +21,10 @@ interface StepComponentWrapper {
 
 function StepSelector(stepProps: StepProps) {
   const [Step, setStep] = useState<StepComponentWrapper>();
+  const bg = useColorModeValue("gray.50", "gray.950");
+
   return (
-    <Box
-      bg="gray.50"
-      p={4}
-      shadow="md"
-      borderWidth="1px"
-      borderRadius="md"
-      m={2}
-    >
+    <Box bg={bg} p={4} shadow="md" borderWidth="1px" borderRadius="md" m={2}>
       <Flex>
         <Select
           onChange={(e) =>
@@ -108,15 +104,10 @@ export function StepsBuilder() {
     [steps]
   );
 
+  const bg = useColorModeValue("gray.100", "gray.800");
+
   return (
-    <VStack
-      bg="gray.100"
-      p={4}
-      shadow="md"
-      borderWidth="1px"
-      borderRadius="md"
-      m={5}
-    >
+    <VStack bg={bg} p={4} shadow="md" borderWidth="1px" borderRadius="md" m={5}>
       {allSteps}
       <HStack>
         <Button
