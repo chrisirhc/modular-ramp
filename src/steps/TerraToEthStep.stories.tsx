@@ -39,8 +39,23 @@ const RenderTemplate: Story<TerraToEthStepRenderProps> = (
   </ChakraProvider>
 );
 
-export const WithStatus = RenderTemplate.bind({});
-WithStatus.args = {
+export const WithProgress = RenderTemplate.bind({});
+WithProgress.args = {
+  isToExecute: true,
+  progress: "Sending Transaction",
+  amount: "100",
+};
+
+export const WithSuccess = RenderTemplate.bind({});
+WithSuccess.args = {
+  isToExecute: true,
   amount: "100",
   status: "Success",
+};
+
+export const WithFailure = RenderTemplate.bind({});
+WithFailure.args = {
+  isToExecute: true,
+  amount: "100",
+  status: "Failed due to xyz.",
 };

@@ -12,6 +12,9 @@ import {
   InputGroup,
   InputRightElement,
   Spinner,
+  VStack,
+  HStack,
+  Text,
 } from "@chakra-ui/react";
 
 import { StepProps } from "../types";
@@ -164,7 +167,7 @@ export function TerraToEthStepRender({
   status,
 }: TerraToEthStepRenderProps) {
   return (
-    <>
+    <VStack>
       <FormControl>
         <FormLabel>Amount to bridge to Ethereum</FormLabel>
         <InputGroup>
@@ -186,9 +189,14 @@ export function TerraToEthStepRender({
           />
         </InputGroup>
       </FormControl>
-      {progress ? <Spinner /> : null}
-      {progress || status}
-    </>
+      <HStack>
+        {progress ? <Spinner /> : null}
+        {status === "Success" ? <Text>🟢</Text> : null}
+        <Text color={status && status !== "Success" ? "red" : "current"}>
+          {progress || status}
+        </Text>
+      </HStack>
+    </VStack>
   );
 }
 
