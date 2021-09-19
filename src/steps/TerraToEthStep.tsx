@@ -22,11 +22,9 @@ import { waitForShuttle as EthWaitForShuttle } from "../operations/ethereum";
 
 TerraToEthStep.stepTitle = "Terra to Ethereum Bridge";
 
-function useEstimateTx(
-  amount: string,
-  terraContext: TerraContextProps,
-  ethereumContext: EthereumContextProps
-) {
+function useEstimateTx(amount: string) {
+  const terraContext = useContext(TerraContext);
+  const ethereumContext = useContext(EthereumContext);
   const [estTx, setEstTx] = useState<EstTx>();
 
   // Run estimates on the amount
@@ -70,12 +68,9 @@ function useEstimateTx(
   return estTx;
 }
 
-function useExecuteTx(
-  isToExecute: boolean,
-  estTx: EstTx | undefined,
-  terraContext: TerraContextProps,
-  ethereumContext: EthereumContextProps
-) {
+function useExecuteTx(isToExecute: boolean, estTx: EstTx | undefined) {
+  const terraContext = useContext(TerraContext);
+  const ethereumContext = useContext(EthereumContext);
   const [status, setStatus] = useState<string>("");
   const [progress, setProgress] = useState<string>("");
   const txRef = useRef<EstTx>();
@@ -129,17 +124,11 @@ export function TerraToEthStep({
   isToExecute,
   onExecuted = () => {},
 }: StepProps) {
-  const terraContext = useContext(TerraContext);
-  const ethereumContext = useContext(EthereumContext);
   const [amount, setAmount] = useState<string>("0");
-  const estTx = useEstimateTx(amount, terraContext, ethereumContext);
-  const [status, progress] = useExecuteTx(
-    isToExecute,
-    estTx,
-    terraContext,
-    ethereumContext
-  );
+  const estTx = useEstimateTx(amount);
+  const [status, progress] = useExecuteTx(isToExecute, estTx);
 
+  // Call onExecuted callback if status is available
   useEffect(() => {
     if (!status) {
       return;
@@ -177,8 +166,7 @@ export function TerraToEthStepRender({
   return (
     <>
       <FormControl>
-        Terra To Eth Step
-        <FormLabel>Amount</FormLabel>
+        <FormLabel>Amount to bridge to Ethereum</FormLabel>
         <InputGroup>
           <Input
             placeholder="Enter amount"
