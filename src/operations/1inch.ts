@@ -13,6 +13,7 @@ export type Arg = {
     fromTokenAmount: string;
     toToken: TokenResponse;
     toTokenAmount: string;
+    outputAmount?: string;
   };
 };
 
