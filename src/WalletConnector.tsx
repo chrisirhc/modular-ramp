@@ -25,11 +25,12 @@ export function WalletConnector({ children }: Props) {
   const [networkType, setNetworkType] =
     useState<NetworkType>(DEFAULT_NETWORK_TYPE);
   const [terraContext, setTerraContext] = useState<TerraContextProps>({
-    extension: null,
+    post: null,
     address: null,
     balance: null,
     refreshBalance: () => {},
     networkType: DEFAULT_NETWORK_TYPE,
+    network: null,
   });
   const [ethereumContext, setEthereumContext] = useState<EthereumContextProps>({
     USTBalance: null,

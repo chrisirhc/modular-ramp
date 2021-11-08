@@ -8,14 +8,11 @@ import {
   Int,
   LCDClient,
 } from "@terra-money/terra.js";
+import { NetworkInfo } from "@terra-money/wallet-provider";
 import { printTerraAmount, TERRA_DECIMAL } from "../utils";
 import { RefreshBalanceRet, TerraContextProps } from "../TerraWalletConnector";
 import { WalletContexts } from "../types";
-import {
-  NetworkType,
-  TERRA_NETWORKS,
-  TERRA_NETWORK_CHAIN_IDS,
-} from "../constants";
+import { TERRA_NETWORKS } from "../constants";
 
 const MIN_FEE = new Coin("uusd", new Int(1 * TERRA_DECIMAL));
 
@@ -65,8 +62,7 @@ export async function TerraToEth(
   // Fee calculation is a PITA
   // See https://github.com/terra-money/bridge-web-app/blob/060979b7966d66368d54819a7c83f68949e71014/src/hooks/useSend.ts#L139-L197
   const terra = getLCDClient(terraContext);
-  const estTx = await terra.tx.create(address, estTxOptions);
-  const estimatedFee = await terra.tx.estimateFee(estTx);
+  const estimatedFee = await terra.tx.estimateFee(address, estTxOptions.msgs);
   console.log("estimated gas needed", estimatedFee.gas);
 
   // Fee calculation is a PITA. Assume everything here is being calculated in uusd
@@ -107,25 +103,26 @@ export async function Run(
     terraContext: TerraContextProps;
   }
 ) {
-  const { extension } = terraContext;
-  if (!estTx || !extension) {
+  const { post } = terraContext;
+  if (!estTx || !post) {
     return;
   }
 
   return new Promise((resolve, reject) => {
-    extension.post({
+    post({
       ...estTx.estTx,
       fee: estTx.estFees,
-    });
-    extension.once("onPost", (payload) => {
-      if (payload.error) {
+    }).then((payload) => {
+      if (!payload.success) {
         reject(payload);
         onProgress("Transaction failed.");
         return;
       }
       console.log(payload);
       resolve(payload);
-      onProgress(`Transaction ID: ${payload.id}, Success: ${payload.success}`);
+      onProgress(
+        `Transaction ID: ${payload.result.txhash}, Success: ${payload.success}`
+      );
     });
     onProgress("Posting transaction...");
   });
@@ -149,16 +146,12 @@ export async function WaitForBalanceChange({ terraContext }: WalletContexts) {
   return;
 }
 
-export function getLCDClient({
-  networkType,
-}: {
-  networkType: NetworkType | null;
-}) {
-  if (!networkType) {
-    throw new Error("No network type selected.");
+export function getLCDClient({ network }: { network: NetworkInfo | null }) {
+  if (!network) {
+    throw new Error("Wallet not connected.");
   }
-  const URL = TERRA_NETWORKS[networkType].lcd;
-  const chainID = TERRA_NETWORK_CHAIN_IDS[networkType];
+  const URL = network.lcd;
+  const chainID = network.chainID;
   return new LCDClient({
     URL,
     chainID,
