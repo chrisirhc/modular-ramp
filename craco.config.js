@@ -1,3 +1,4 @@
+// Adapted from wormhole/bridge_ui reference implementation
 const { addBeforeLoader, loaderByName } = require("@craco/craco");
 
 module.exports = {
