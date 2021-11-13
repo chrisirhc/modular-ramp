@@ -22,7 +22,12 @@ import { EthereumContext, EthereumContextProps } from "../EthWalletConnector";
 import { TerraContext, TerraContextProps } from "../TerraWalletConnector";
 import { TerraToEth, Run as TerraRun, EstTx } from "../operations/terra";
 import { waitForShuttle as EthWaitForShuttle } from "../operations/ethereum";
-import { transferFromEth } from "@certusone/wormhole-sdk";
+import {
+  transferFromEth,
+  CHAIN_ID_SOLANA,
+  hexToUint8Array,
+} from "@certusone/wormhole-sdk";
+import { POLYGON_TOKEN_BRIDGE_ADDRESS } from "../operations/polygon";
 
 WormholeBridge.stepTitle = "Terra to Ethereum Bridge";
 
@@ -30,6 +35,11 @@ function useEstimateTx(amount: string) {
   const terraContext = useContext(TerraContext);
   const ethereumContext = useContext(EthereumContext);
   const [estTx, setEstTx] = useState<EstTx>();
+  const { networkType, signer } = ethereumContext;
+
+  // https://polygonscan.com/token/0x2791bca1f2de4661ed88a30c99a7a9449aa84174
+  const TOKEN_ADDRESS = "0x2791bca1f2de4661ed88a30c99a7a9449aa84174";
+  const RECIPIENT_ADDRESS = "FSAUrk51D1yfxkgeNhMUo3t9bedMuWt2MJLCAsVHMKHz";
 
   // Run estimates on the amount
   useEffect(() => {
@@ -42,27 +52,22 @@ function useEstimateTx(amount: string) {
     if (amount === estTx?.amountStr) {
       return;
     }
+    if (!signer || !networkType) {
+      return;
+    }
+
     let canceled = false;
-    TerraToEth(amount, {
-      terraContext,
-      ethereumContext,
-    }).then(
-      (tx) => {
-        if (canceled) {
-          console.debug("Canceled estimation", amount);
-          return;
-        }
-        setEstTx(tx);
-        console.debug("New estimated tx", tx);
-      },
-      (e) => {
-        if (canceled) {
-          console.debug("Canceled estimation failed", amount, e);
-          return;
-        }
-        console.error("Error", e);
-      }
+
+    const tx = transferFromEth(
+      POLYGON_TOKEN_BRIDGE_ADDRESS[networkType],
+      signer,
+      TOKEN_ADDRESS,
+      amount,
+      CHAIN_ID_SOLANA,
+      hexToUint8Array(RECIPIENT_ADDRESS)
     );
+
+    console.log(tx);
 
     return () => {
       canceled = true;
