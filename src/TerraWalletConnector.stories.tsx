@@ -20,4 +20,6 @@ const Template: Story<Props> = (args, { argTypes }) => (
 );
 
 export const Main = Template.bind({});
-Main.args = {};
+Main.args = {
+  networkType: "testnet",
+};
