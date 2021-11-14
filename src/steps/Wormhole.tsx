@@ -26,6 +26,7 @@ import {
   transferFromEth,
   CHAIN_ID_SOLANA,
   hexToUint8Array,
+  nativeToHexString,
 } from "@certusone/wormhole-sdk";
 import { POLYGON_TOKEN_BRIDGE_ADDRESS } from "../operations/polygon";
 
@@ -58,16 +59,25 @@ function useEstimateTx(amount: string) {
 
     let canceled = false;
 
+    const recipientHexString = nativeToHexString(
+      RECIPIENT_ADDRESS,
+      CHAIN_ID_SOLANA
+    );
+    if (!recipientHexString) {
+      return;
+    }
+    const reicipientAddress = hexToUint8Array(recipientHexString);
+
     const tx = transferFromEth(
       POLYGON_TOKEN_BRIDGE_ADDRESS[networkType],
       signer,
       TOKEN_ADDRESS,
       amount,
       CHAIN_ID_SOLANA,
-      hexToUint8Array(RECIPIENT_ADDRESS)
+      reicipientAddress
     );
 
-    console.log(tx);
+    tx.then((t) => console.log(t));
 
     return () => {
       canceled = true;
