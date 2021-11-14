@@ -4,8 +4,10 @@ import React, {
   useState,
   useRef,
   ChangeEventHandler,
+  useCallback,
 } from "react";
 import {
+  Button,
   FormControl,
   FormLabel,
   Input,
@@ -17,7 +19,8 @@ import {
   Text,
 } from "@chakra-ui/react";
 import { utils } from "ethers";
-import { BigNumberish } from "@ethersproject/bignumber";
+import { BigNumber, BigNumberish } from "@ethersproject/bignumber";
+import { ContractReceipt } from "@ethersproject/contracts";
 
 import { StepProps } from "../types";
 import { EthereumContext, EthereumContextProps } from "../EthWalletConnector";
@@ -28,8 +31,12 @@ import {
   CHAIN_ID_SOLANA,
   hexToUint8Array,
   nativeToHexString,
+  approveEth,
 } from "@certusone/wormhole-sdk";
-import { POLYGON_TOKEN_BRIDGE_ADDRESS } from "../operations/polygon";
+import {
+  POLYGON_TOKEN_BRIDGE_ADDRESS,
+  ETH_TOKEN_BRIDGE_ADDRESS,
+} from "../operations/wormhole";
 
 WormholeBridge.stepTitle = "Terra to Ethereum Bridge";
 
@@ -45,8 +52,8 @@ function useEstimateTx(amount: string) {
   const ethereumContext = useContext(EthereumContext);
   const [estTx, setEstTx] = useState<EstTx>();
 
-  // https://polygonscan.com/token/0x2791bca1f2de4661ed88a30c99a7a9449aa84174
-  const TOKEN_ADDRESS = "0x2791bca1f2de4661ed88a30c99a7a9449aa84174";
+  // https://goerli.etherscan.io/address/0xBA62BCfcAaFc6622853cca2BE6Ac7d845BC0f2Dc
+  const TOKEN_ADDRESS = "0xBA62BCfcAaFc6622853cca2BE6Ac7d845BC0f2Dc";
   const RECIPIENT_ADDRESS = "FSAUrk51D1yfxkgeNhMUo3t9bedMuWt2MJLCAsVHMKHz";
 
   // Run estimates on the amount
@@ -60,8 +67,6 @@ function useEstimateTx(amount: string) {
     if (amount === estTx?.amountStr) {
       return;
     }
-
-    let canceled = false;
 
     const recipientHexString = nativeToHexString(
       RECIPIENT_ADDRESS,
@@ -78,10 +83,6 @@ function useEstimateTx(amount: string) {
       tokenAddress: TOKEN_ADDRESS,
       recipientAddress,
     });
-
-    return () => {
-      canceled = true;
-    };
   }, [amount, estTx, ethereumContext, terraContext]);
 
   return estTx;
@@ -125,7 +126,7 @@ function useExecuteTx(isToExecute: boolean, estTx: EstTx | undefined) {
     setProgress("Sending Transaction");
 
     const tx = transferFromEth(
-      POLYGON_TOKEN_BRIDGE_ADDRESS[networkType],
+      ETH_TOKEN_BRIDGE_ADDRESS[networkType],
       signer,
       estTx.tokenAddress,
       // TODO: Should use the token's decimals
@@ -150,6 +151,26 @@ function useExecuteTx(isToExecute: boolean, estTx: EstTx | undefined) {
   return [status, progress];
 }
 
+function useAllowance(estTx: EstTx | undefined) {
+  const ethereumContext = useContext(EthereumContext);
+  const { networkType, signer } = ethereumContext;
+
+  if (!networkType || !signer || !estTx) {
+    return () => {};
+  }
+
+  const approveFn = function () {
+    return approveEth(
+      ETH_TOKEN_BRIDGE_ADDRESS[networkType],
+      estTx.tokenAddress,
+      signer,
+      estTx.amount
+    );
+  };
+
+  return approveFn;
+}
+
 export function WormholeBridge({
   isToExecute,
   onExecuted = () => {},
@@ -157,6 +178,7 @@ export function WormholeBridge({
   const [amount, setAmount] = useState<string>("0");
   const estTx = useEstimateTx(amount);
   const [status, progress] = useExecuteTx(isToExecute, estTx);
+  const onApproveAmount = useAllowance(estTx);
 
   // Call onExecuted callback if status is available
   useEffect(() => {
@@ -171,6 +193,7 @@ export function WormholeBridge({
     <TerraToEthStepRender
       amount={amount}
       isToExecute={isToExecute}
+      onApproveAmount={onApproveAmount}
       onAmountChanged={(event) => setAmount(event.target.value)}
       progress={progress}
       status={status}
@@ -181,6 +204,7 @@ export function WormholeBridge({
 export interface TerraToEthStepRenderProps {
   amount: string;
   isToExecute: boolean;
+  onApproveAmount: (() => Promise<ContractReceipt>) | (() => void);
   onAmountChanged: ChangeEventHandler<HTMLInputElement>;
   progress: string;
   status: string;
@@ -189,6 +213,7 @@ export interface TerraToEthStepRenderProps {
 export function TerraToEthStepRender({
   amount,
   isToExecute,
+  onApproveAmount,
   onAmountChanged,
   progress,
   status,
@@ -215,6 +240,7 @@ export function TerraToEthStepRender({
             children="UST"
           />
         </InputGroup>
+        <Button onClick={onApproveAmount}>Approve Amount</Button>
       </FormControl>
       <HStack>
         {progress ? <Spinner /> : null}
