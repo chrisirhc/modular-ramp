@@ -16,12 +16,13 @@ import {
   HStack,
   Text,
 } from "@chakra-ui/react";
+import { utils } from "ethers";
+import { BigNumberish } from "@ethersproject/bignumber";
 
 import { StepProps } from "../types";
 import { EthereumContext, EthereumContextProps } from "../EthWalletConnector";
 import { TerraContext, TerraContextProps } from "../TerraWalletConnector";
-import { TerraToEth, Run as TerraRun, EstTx } from "../operations/terra";
-import { waitForShuttle as EthWaitForShuttle } from "../operations/ethereum";
+
 import {
   transferFromEth,
   CHAIN_ID_SOLANA,
@@ -32,11 +33,17 @@ import { POLYGON_TOKEN_BRIDGE_ADDRESS } from "../operations/polygon";
 
 WormholeBridge.stepTitle = "Terra to Ethereum Bridge";
 
+interface EstTx {
+  tokenAddress: string;
+  recipientAddress: Uint8Array;
+  amount: BigNumberish;
+  amountStr: string;
+}
+
 function useEstimateTx(amount: string) {
   const terraContext = useContext(TerraContext);
   const ethereumContext = useContext(EthereumContext);
   const [estTx, setEstTx] = useState<EstTx>();
-  const { networkType, signer } = ethereumContext;
 
   // https://polygonscan.com/token/0x2791bca1f2de4661ed88a30c99a7a9449aa84174
   const TOKEN_ADDRESS = "0x2791bca1f2de4661ed88a30c99a7a9449aa84174";
@@ -53,9 +60,6 @@ function useEstimateTx(amount: string) {
     if (amount === estTx?.amountStr) {
       return;
     }
-    if (!signer || !networkType) {
-      return;
-    }
 
     let canceled = false;
 
@@ -66,18 +70,14 @@ function useEstimateTx(amount: string) {
     if (!recipientHexString) {
       return;
     }
-    const reicipientAddress = hexToUint8Array(recipientHexString);
+    const recipientAddress = hexToUint8Array(recipientHexString);
 
-    const tx = transferFromEth(
-      POLYGON_TOKEN_BRIDGE_ADDRESS[networkType],
-      signer,
-      TOKEN_ADDRESS,
-      amount,
-      CHAIN_ID_SOLANA,
-      reicipientAddress
-    );
-
-    tx.then((t) => console.log(t));
+    setEstTx({
+      amount: utils.parseEther(amount),
+      amountStr: amount,
+      tokenAddress: TOKEN_ADDRESS,
+      recipientAddress,
+    });
 
     return () => {
       canceled = true;
@@ -115,15 +115,26 @@ function useExecuteTx(isToExecute: boolean, estTx: EstTx | undefined) {
       );
       return;
     }
+    const { networkType, signer } = ethereumContext;
+    if (!networkType || !signer) {
+      return;
+    }
+
     txRef.current = estTx;
     console.debug("Executing tx", estTx);
     setProgress("Sending Transaction");
-    run({
-      estTx,
-      terraContext,
-      ethereumContext,
-      onProgress: setProgress,
-    }).then(
+
+    const tx = transferFromEth(
+      POLYGON_TOKEN_BRIDGE_ADDRESS[networkType],
+      signer,
+      estTx.tokenAddress,
+      // TODO: Should use the token's decimals
+      estTx.amount,
+      CHAIN_ID_SOLANA,
+      estTx.recipientAddress
+    );
+
+    tx.then(
       () => {
         setStatus("Success");
         setProgress("");
