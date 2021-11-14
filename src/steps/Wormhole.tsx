@@ -226,22 +226,3 @@ export function TerraToEthStepRender({
     </VStack>
   );
 }
-
-async function run({
-  estTx,
-  terraContext,
-  ethereumContext,
-  onProgress,
-}: {
-  estTx: EstTx;
-  terraContext: TerraContextProps;
-  ethereumContext: EthereumContextProps;
-  onProgress: (status: string) => void;
-}) {
-  await TerraRun(estTx, { terraContext, onProgress });
-  terraContext.refreshBalance();
-  onProgress("Waiting for transaction on Eth side");
-  await EthWaitForShuttle({ ethereumContext, terraContext });
-  ethereumContext.refreshBalance();
-  onProgress("Waiting for transaction on Eth side");
-}
