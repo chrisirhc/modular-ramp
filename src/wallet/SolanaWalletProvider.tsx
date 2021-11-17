@@ -42,7 +42,7 @@ export const SolanaWalletKey = () => {
   return (
     <div>
       <WalletMultiButton />
-      {wallet && <WalletDisconnectButton />}
+      {wallet && <WalletDisconnectButton startIcon={null} />}
     </div>
   );
 };

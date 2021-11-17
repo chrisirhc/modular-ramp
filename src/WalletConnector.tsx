@@ -12,6 +12,10 @@ import {
   EthereumContextProps,
 } from "./EthWalletConnector";
 import {
+  SolanaWalletProvider,
+  SolanaWalletKey,
+} from "./wallet/SolanaWalletProvider";
+import {
   TerraWalletConnector,
   TerraContext,
   TerraContextProps,
@@ -42,45 +46,50 @@ export function WalletConnector({ children }: Props) {
   });
 
   return (
-    <Box>
-      <Box p={4} shadow="md" borderWidth="1px" borderRadius="md" m={5}>
-        <Box>
-          <Select
-            mb={2}
-            value={networkType}
-            onChange={(e) => setNetworkType(e.target.value as NetworkType)}
-            borderColor={networkType === "mainnet" ? "red.500" : undefined}
-            bg={networkType === "mainnet" ? "red.500" : "transparent"}
-          >
-            {NETWORK_TYPE_OPTIONS.map((networkType) => (
-              <option key={networkType} value={networkType}>
-                {NETWORK_TYPES[networkType]}
-              </option>
-            ))}
-          </Select>
-        </Box>
-        <Wrap justify="space-evenly">
-          <WrapItem>
-            <EthWalletConnector
-              networkType={networkType}
-              onChange={setEthereumContext}
-            />
-          </WrapItem>
-          <WrapItem>
-            <TerraWalletConnector
-              networkType={networkType}
-              onChange={setTerraContext}
-            />
-          </WrapItem>
-        </Wrap>
-      </Box>
+    <SolanaWalletProvider>
       <Box>
-        <TerraContext.Provider value={terraContext}>
-          <EthereumContext.Provider value={ethereumContext}>
-            {children}
-          </EthereumContext.Provider>
-        </TerraContext.Provider>
+        <Box p={4} shadow="md" borderWidth="1px" borderRadius="md" m={5}>
+          <Box>
+            <Select
+              mb={2}
+              value={networkType}
+              onChange={(e) => setNetworkType(e.target.value as NetworkType)}
+              borderColor={networkType === "mainnet" ? "red.500" : undefined}
+              bg={networkType === "mainnet" ? "red.500" : "transparent"}
+            >
+              {NETWORK_TYPE_OPTIONS.map((networkType) => (
+                <option key={networkType} value={networkType}>
+                  {NETWORK_TYPES[networkType]}
+                </option>
+              ))}
+            </Select>
+          </Box>
+          <Wrap justify="space-evenly">
+            <WrapItem>
+              <EthWalletConnector
+                networkType={networkType}
+                onChange={setEthereumContext}
+              />
+            </WrapItem>
+            <WrapItem>
+              <TerraWalletConnector
+                networkType={networkType}
+                onChange={setTerraContext}
+              />
+            </WrapItem>
+            <WrapItem>
+              <SolanaWalletKey />
+            </WrapItem>
+          </Wrap>
+        </Box>
+        <Box>
+          <TerraContext.Provider value={terraContext}>
+            <EthereumContext.Provider value={ethereumContext}>
+              {children}
+            </EthereumContext.Provider>
+          </TerraContext.Provider>
+        </Box>
       </Box>
-    </Box>
+    </SolanaWalletProvider>
   );
 }

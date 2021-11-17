@@ -21,6 +21,7 @@ import {
 import { utils } from "ethers";
 import { BigNumber, BigNumberish } from "@ethersproject/bignumber";
 import { ContractReceipt } from "@ethersproject/contracts";
+import { Connection, clusterApiUrl } from "@solana/web3.js";
 
 import { StepProps } from "../types";
 import { EthereumContext, EthereumContextProps } from "../EthWalletConnector";
@@ -32,11 +33,24 @@ import {
   hexToUint8Array,
   nativeToHexString,
   approveEth,
+  postVaaSolana,
+  redeemAndUnwrapOnSolana,
+  redeemOnSolana,
+  parseSequenceFromLogEth,
+  getEmitterAddressEth,
+  CHAIN_ID_ETH,
+  uint8ArrayToHex,
 } from "@certusone/wormhole-sdk";
 import {
   POLYGON_TOKEN_BRIDGE_ADDRESS,
   ETH_TOKEN_BRIDGE_ADDRESS,
+  SOL_BRIDGE_ADDRESS,
+  ETH_BRIDGE_ADDRESS,
+  getSignedVAAWithRetry,
+  SOL_TOKEN_BRIDGE_ADDRESS,
 } from "../operations/wormhole";
+import { useSolanaWallet } from "../wallet/SolanaWalletProvider";
+import { signSendAndConfirm } from "../operations/solana";
 
 WormholeBridge.stepTitle = "Terra to Ethereum Bridge";
 
@@ -93,6 +107,8 @@ function useExecuteTx(isToExecute: boolean, estTx: EstTx | undefined) {
   const ethereumContext = useContext(EthereumContext);
   const [status, setStatus] = useState<string>("");
   const [progress, setProgress] = useState<string>("");
+  const [txHash, setTxHash] = useState<string>("");
+  const [signedVAAHex, setSignedVAAHex] = useState<string>("");
   const txRef = useRef<EstTx>();
 
   useEffect(() => {
@@ -136,9 +152,29 @@ function useExecuteTx(isToExecute: boolean, estTx: EstTx | undefined) {
     );
 
     tx.then(
-      () => {
-        setStatus("Success");
+      async (receipt: ContractReceipt) => {
+        setStatus(`Successfully transacted: ${receipt.transactionHash}`);
         setProgress("");
+        setTxHash(receipt.transactionHash);
+
+        const sequence = parseSequenceFromLogEth(
+          receipt,
+          ETH_BRIDGE_ADDRESS[networkType]
+        );
+        const emitterAddress = getEmitterAddressEth(
+          ETH_TOKEN_BRIDGE_ADDRESS[networkType]
+        );
+        // enqueueSnackbar(null, {
+        //   content: <Alert severity="info">Fetching VAA</Alert>,
+        // });
+        const { vaaBytes } = await getSignedVAAWithRetry(
+          CHAIN_ID_ETH,
+          emitterAddress,
+          sequence.toString(),
+          networkType
+        );
+        setSignedVAAHex(uint8ArrayToHex(vaaBytes));
+        console.log(receipt);
       },
       (e) => {
         console.error("Error in transaction", e);
@@ -148,7 +184,7 @@ function useExecuteTx(isToExecute: boolean, estTx: EstTx | undefined) {
     );
   }, [isToExecute, status, estTx, terraContext, ethereumContext]);
 
-  return [status, progress];
+  return [status, progress, txHash, signedVAAHex];
 }
 
 function useAllowance(estTx: EstTx | undefined) {
@@ -171,14 +207,70 @@ function useAllowance(estTx: EstTx | undefined) {
   return approveFn;
 }
 
+function useRedeem(txHash: string, signedVAAHex: string) {
+  const ethereumContext = useContext(EthereumContext);
+  const wallet = useSolanaWallet();
+  const { networkType, signer } = ethereumContext;
+  const solanaSignTransaction = wallet.signTransaction;
+  const payerAddress = wallet.publicKey?.toString();
+
+  if (
+    !txHash ||
+    !networkType ||
+    !signer ||
+    !solanaSignTransaction ||
+    !payerAddress
+  ) {
+    return () => {};
+  }
+  const isNative = false;
+  const SOLANA_HOST = clusterApiUrl(
+    networkType === "testnet" ? "testnet" : "mainnet-beta"
+  );
+  const signedVAA = hexToUint8Array(signedVAAHex);
+  const redeemFn = async function () {
+    const connection = new Connection(SOLANA_HOST, "confirmed");
+    await postVaaSolana(
+      connection,
+      solanaSignTransaction,
+      SOL_BRIDGE_ADDRESS[networkType],
+      payerAddress,
+      Buffer.from(signedVAA)
+    );
+    // TODO: how do we retry in between these steps
+    const transaction = isNative
+      ? await redeemAndUnwrapOnSolana(
+          connection,
+          SOL_BRIDGE_ADDRESS[networkType],
+          SOL_TOKEN_BRIDGE_ADDRESS[networkType],
+          payerAddress,
+          signedVAA
+        )
+      : await redeemOnSolana(
+          connection,
+          SOL_BRIDGE_ADDRESS[networkType],
+          SOL_TOKEN_BRIDGE_ADDRESS[networkType],
+          payerAddress,
+          signedVAA
+        );
+    const txid = await signSendAndConfirm(wallet, connection, transaction);
+    console.log("Transaction", txid);
+  };
+  return redeemFn;
+}
+
 export function WormholeBridge({
   isToExecute,
   onExecuted = () => {},
 }: StepProps) {
   const [amount, setAmount] = useState<string>("0");
   const estTx = useEstimateTx(amount);
-  const [status, progress] = useExecuteTx(isToExecute, estTx);
+  const [status, progress, txHash, signedVAAHex] = useExecuteTx(
+    isToExecute,
+    estTx
+  );
   const onApproveAmount = useAllowance(estTx);
+  const onRedeem = useRedeem(txHash, signedVAAHex);
 
   // Call onExecuted callback if status is available
   useEffect(() => {
