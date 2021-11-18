@@ -287,6 +287,7 @@ export function WormholeBridge({
       isToExecute={isToExecute}
       onApproveAmount={onApproveAmount}
       onAmountChanged={(event) => setAmount(event.target.value)}
+      onRedeem={onRedeem}
       progress={progress}
       status={status}
     />
@@ -298,6 +299,7 @@ export interface TerraToEthStepRenderProps {
   isToExecute: boolean;
   onApproveAmount: (() => Promise<ContractReceipt>) | (() => void);
   onAmountChanged: ChangeEventHandler<HTMLInputElement>;
+  onRedeem: () => void;
   progress: string;
   status: string;
 }
@@ -307,6 +309,7 @@ export function TerraToEthStepRender({
   isToExecute,
   onApproveAmount,
   onAmountChanged,
+  onRedeem,
   progress,
   status,
 }: TerraToEthStepRenderProps) {
@@ -332,7 +335,8 @@ export function TerraToEthStepRender({
             children="UST"
           />
         </InputGroup>
-        <Button onClick={onApproveAmount}>Approve Amount</Button>
+        <Button onClick={onApproveAmount}>Approve Amount</Button>{" "}
+        <Button onClick={onRedeem}>Redeem</Button>
       </FormControl>
       <HStack>
         {progress ? <Spinner /> : null}
