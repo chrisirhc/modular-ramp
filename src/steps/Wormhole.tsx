@@ -40,6 +40,7 @@ import {
   getEmitterAddressEth,
   CHAIN_ID_ETH,
   uint8ArrayToHex,
+  getForeignAssetSolana,
 } from "@certusone/wormhole-sdk";
 import {
   POLYGON_TOKEN_BRIDGE_ADDRESS,
@@ -100,6 +101,43 @@ function useEstimateTx(amount: string) {
   }, [amount, estTx, ethereumContext, terraContext]);
 
   return estTx;
+}
+
+// TODO: This could be part of Est Tx step.
+function useForeignAsset() {
+  const originAsset = "0xBA62BCfcAaFc6622853cca2BE6Ac7d845BC0f2Dc";
+  const originChain = CHAIN_ID_ETH;
+  const ethereumContext = useContext(EthereumContext);
+  const { networkType } = ethereumContext;
+
+  if (!networkType) {
+    return () => {};
+  }
+
+  return () => {
+    const SOLANA_HOST = clusterApiUrl(
+      networkType === "testnet" ? "testnet" : "mainnet-beta"
+    );
+    const connection = new Connection(SOLANA_HOST, "confirmed");
+    const originAssetHex = nativeToHexString(originAsset, originChain);
+
+    if (!originAssetHex) {
+      return;
+    }
+
+    const tx = getForeignAssetSolana(
+      connection,
+      SOL_TOKEN_BRIDGE_ADDRESS[networkType],
+      originChain,
+      hexToUint8Array(originAssetHex)
+    );
+
+    tx.then((r) => {
+      console.log(r);
+    });
+
+    return tx;
+  };
 }
 
 function useExecuteTx(isToExecute: boolean, estTx: EstTx | undefined) {
@@ -269,6 +307,7 @@ export function WormholeBridge({
     isToExecute,
     estTx
   );
+  const onFetchForeignAsset = useForeignAsset();
   const onApproveAmount = useAllowance(estTx);
   const onRedeem = useRedeem(txHash, signedVAAHex);
 
@@ -287,6 +326,7 @@ export function WormholeBridge({
       isToExecute={isToExecute}
       onApproveAmount={onApproveAmount}
       onAmountChanged={(event) => setAmount(event.target.value)}
+      onFetchForeignAsset={onFetchForeignAsset}
       onRedeem={onRedeem}
       progress={progress}
       status={status}
@@ -298,6 +338,7 @@ export interface TerraToEthStepRenderProps {
   amount: string;
   isToExecute: boolean;
   onApproveAmount: (() => Promise<ContractReceipt>) | (() => void);
+  onFetchForeignAsset: (() => Promise<ContractReceipt>) | (() => void);
   onAmountChanged: ChangeEventHandler<HTMLInputElement>;
   onRedeem: () => void;
   progress: string;
@@ -308,6 +349,7 @@ export function TerraToEthStepRender({
   amount,
   isToExecute,
   onApproveAmount,
+  onFetchForeignAsset,
   onAmountChanged,
   onRedeem,
   progress,
@@ -335,6 +377,7 @@ export function TerraToEthStepRender({
             children="UST"
           />
         </InputGroup>
+        <Button onClick={onFetchForeignAsset}>Fetch Foreign Asset</Button>{" "}
         <Button onClick={onApproveAmount}>Approve Amount</Button>{" "}
         <Button onClick={onRedeem}>Redeem</Button>
       </FormControl>
