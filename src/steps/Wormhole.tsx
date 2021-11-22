@@ -5,6 +5,7 @@ import React, {
   useRef,
   ChangeEventHandler,
   useCallback,
+  useMemo,
 } from "react";
 import {
   Button,
@@ -14,6 +15,7 @@ import {
   InputGroup,
   InputRightElement,
   Spinner,
+  Select,
   VStack,
   HStack,
   Text,
@@ -297,6 +299,36 @@ function useRedeem(txHash: string, signedVAAHex: string) {
   return redeemFn;
 }
 
+const TOKEN_OPTIONS: TokenOption[] = [
+  {
+    symbol: "USDC",
+    // https://polygonscan.com/token/0x2791bca1f2de4661ed88a30c99a7a9449aa84174
+    address: "0x2791bca1f2de4661ed88a30c99a7a9449aa84174",
+  },
+];
+
+function useTokenOptions(): [
+  token: TokenOption | null,
+  tokenOptions: TokenOption[],
+  onPickTokenByAddress: (tokenAddress: string) => void
+] {
+  const [token, setToken] = useState<TokenOption | null>(null);
+  // const ethereumContext = useContext(EthereumContext);
+  // const { networkType } = ethereumContext;
+  const [tokenOptions, onPickTokenByAddress] = useMemo(() => {
+    const tokenOptions = TOKEN_OPTIONS;
+    const onPickTokenByAddress = (tokenAddress: string) =>
+      setToken(
+        tokenOptions.find(
+          (tokenOption) => tokenAddress === tokenOption.address
+        ) || null
+      );
+    return [tokenOptions, onPickTokenByAddress];
+  }, []);
+
+  return [token, tokenOptions, onPickTokenByAddress];
+}
+
 export function WormholeBridge({
   isToExecute,
   onExecuted = () => {},
@@ -310,6 +342,11 @@ export function WormholeBridge({
   const onFetchForeignAsset = useForeignAsset();
   const onApproveAmount = useAllowance(estTx);
   const onRedeem = useRedeem(txHash, signedVAAHex);
+  const [token, tokenOptions, onPickTokenByAddress] = useTokenOptions();
+  const onChangeToken = useCallback(
+    (event) => onPickTokenByAddress(event.target.value),
+    [onPickTokenByAddress]
+  );
 
   // Call onExecuted callback if status is available
   useEffect(() => {
@@ -324,6 +361,9 @@ export function WormholeBridge({
     <TerraToEthStepRender
       amount={amount}
       isToExecute={isToExecute}
+      token={token}
+      tokenOptions={tokenOptions}
+      onChangeToken={onChangeToken}
       onApproveAmount={onApproveAmount}
       onAmountChanged={(event) => setAmount(event.target.value)}
       onFetchForeignAsset={onFetchForeignAsset}
@@ -334,9 +374,19 @@ export function WormholeBridge({
   );
 }
 
+interface TokenOption {
+  address: string;
+  symbol: string;
+}
+
 export interface TerraToEthStepRenderProps {
   amount: string;
   isToExecute: boolean;
+
+  token: TokenOption | null;
+  tokenOptions: TokenOption[];
+  onChangeToken: ChangeEventHandler<HTMLSelectElement>;
+
   onApproveAmount: (() => Promise<ContractReceipt>) | (() => void);
   onFetchForeignAsset: (() => Promise<ContractReceipt>) | (() => void);
   onAmountChanged: ChangeEventHandler<HTMLInputElement>;
@@ -348,6 +398,9 @@ export interface TerraToEthStepRenderProps {
 export function TerraToEthStepRender({
   amount,
   isToExecute,
+  token,
+  tokenOptions,
+  onChangeToken,
   onApproveAmount,
   onFetchForeignAsset,
   onAmountChanged,
@@ -357,6 +410,20 @@ export function TerraToEthStepRender({
 }: TerraToEthStepRenderProps) {
   return (
     <VStack>
+      <FormControl>
+        <FormLabel>Token to Bridge</FormLabel>
+        <Select
+          placeholder="Select token"
+          value={token?.address}
+          onChange={onChangeToken}
+        >
+          {tokenOptions.map((tokenOption) => (
+            <option key={tokenOption.address} value={tokenOption.address}>
+              {tokenOption.symbol} {tokenOption.address}
+            </option>
+          ))}
+        </Select>
+      </FormControl>
       <FormControl>
         <FormLabel>Amount to bridge to Ethereum</FormLabel>
         <InputGroup>
