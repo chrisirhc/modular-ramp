@@ -409,7 +409,7 @@ export function TerraToEthStepRender({
   status,
 }: TerraToEthStepRenderProps) {
   return (
-    <VStack>
+    <VStack spacing={4}>
       <FormControl>
         <FormLabel>Token to Bridge</FormLabel>
         <Select
@@ -444,10 +444,12 @@ export function TerraToEthStepRender({
             children="UST"
           />
         </InputGroup>
-        <Button onClick={onFetchForeignAsset}>Fetch Foreign Asset</Button>{" "}
-        <Button onClick={onApproveAmount}>Approve Amount</Button>{" "}
-        <Button onClick={onRedeem}>Redeem</Button>
       </FormControl>
+      <HStack>
+        <Button onClick={onFetchForeignAsset}>Fetch Foreign Asset</Button>
+        <Button onClick={onApproveAmount}>Approve Amount</Button>
+        <Button onClick={onRedeem}>Redeem</Button>
+      </HStack>
       <HStack>
         {progress ? <Spinner /> : null}
         {status === "Success" ? <Text>🟢</Text> : null}
