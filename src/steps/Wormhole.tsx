@@ -299,11 +299,19 @@ function useRedeem(txHash: string, signedVAAHex: string) {
   return redeemFn;
 }
 
+// TODO: Add Polygon information
 const TOKEN_OPTIONS: TokenOption[] = [
   {
-    symbol: "USDC",
+    name: "Polygon USDC",
+    symbol: "pUSDC",
     // https://polygonscan.com/token/0x2791bca1f2de4661ed88a30c99a7a9449aa84174
     address: "0x2791bca1f2de4661ed88a30c99a7a9449aa84174",
+  },
+  {
+    name: "Polygon Wormhole UST",
+    symbol: "pwUST",
+    // https://polygonscan.com/token/0xe6469ba6d2fd6130788e0ea9c0a0515900563b59
+    address: "0xe6469ba6d2fd6130788e0ea9c0a0515900563b59",
   },
 ];
 
@@ -375,6 +383,7 @@ export function WormholeBridge({
 }
 
 interface TokenOption {
+  name: string;
   address: string;
   symbol: string;
 }
@@ -419,7 +428,7 @@ export function TerraToEthStepRender({
         >
           {tokenOptions.map((tokenOption) => (
             <option key={tokenOption.address} value={tokenOption.address}>
-              {tokenOption.symbol} {tokenOption.address}
+              {tokenOption.name} {tokenOption.symbol} {tokenOption.address}
             </option>
           ))}
         </Select>
@@ -441,7 +450,7 @@ export function TerraToEthStepRender({
             color="gray.300"
             fontSize="1.2em"
             width="4.5rem"
-            children="UST"
+            children={token?.symbol}
           />
         </InputGroup>
       </FormControl>
