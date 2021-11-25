@@ -2,6 +2,13 @@ import React, { createContext, useEffect, useState } from "react";
 import { Box, Button } from "@chakra-ui/react";
 import { NetworkType } from "../constants";
 import { ethers, utils, BigNumber, providers } from "ethers";
+import { ERC20_ABI } from "../erc20";
+
+// From https://github.com/terra-money/shuttle/blob/main/TERRA_ASSET.md#erc20-contracts
+const UST_CONTRACT: Record<NetworkType, string> = {
+  testnet: "0x6cA13a4ab78dd7D657226b155873A04DB929A3A4",
+  mainnet: "0xa47c8bf37f92aBed4A126BDA807A7b7498661acD",
+};
 
 export type Balance = {
   balance: BigNumber;

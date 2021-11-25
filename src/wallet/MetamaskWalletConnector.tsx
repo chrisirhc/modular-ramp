@@ -4,7 +4,6 @@ import { ethers, utils, BigNumber, providers } from "ethers";
 import detectEthereumProvider from "@metamask/detect-provider";
 
 import { NetworkType } from "../constants";
-import { ERC20_ABI } from "../erc20";
 import {
   Balance,
   EthereumContext,
@@ -16,12 +15,6 @@ import {
 const CHAIN_ID: Record<NetworkType, string> = {
   testnet: "0x3",
   mainnet: "0x1",
-};
-
-// From https://github.com/terra-money/shuttle/blob/main/TERRA_ASSET.md#erc20-contracts
-const UST_CONTRACT: Record<NetworkType, string> = {
-  testnet: "0x6cA13a4ab78dd7D657226b155873A04DB929A3A4",
-  mainnet: "0xa47c8bf37f92aBed4A126BDA807A7b7498661acD",
 };
 
 type Props = {
