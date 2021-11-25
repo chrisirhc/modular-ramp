@@ -6,6 +6,7 @@ import React, {
   ChangeEventHandler,
   useCallback,
   useMemo,
+  FC,
 } from "react";
 import {
   Button,
@@ -46,6 +47,8 @@ import {
   CHAIN_ID_ETH,
   uint8ArrayToHex,
   getForeignAssetSolana,
+  ChainId,
+  CHAIN_ID_POLYGON,
 } from "@certusone/wormhole-sdk";
 import {
   POLYGON_TOKEN_BRIDGE_ADDRESS,
@@ -358,6 +361,8 @@ export function WormholeBridge({
     (event) => onPickTokenByAddress(event.target.value),
     [onPickTokenByAddress]
   );
+  const sourceChainPickerState = useChainPickerState();
+  const destChainPickerState = useChainPickerState();
 
   // Call onExecuted callback if status is available
   useEffect(() => {
@@ -369,7 +374,7 @@ export function WormholeBridge({
 
   // No constraints, pick whatever you want and handle the estimates
   return (
-    <TerraToEthStepRender
+    <WormholeBridgeRender
       amount={amount}
       isToExecute={isToExecute}
       token={token}
@@ -381,6 +386,8 @@ export function WormholeBridge({
       onRedeem={onRedeem}
       progress={progress}
       status={status}
+      sourceChainPickerState={sourceChainPickerState}
+      destChainPickerState={destChainPickerState}
     />
   );
 }
@@ -405,9 +412,12 @@ export interface TerraToEthStepRenderProps {
   onRedeem: () => void;
   progress: string;
   status: string;
+
+  sourceChainPickerState: ChainPickerState;
+  destChainPickerState: ChainPickerState;
 }
 
-export function TerraToEthStepRender({
+export function WormholeBridgeRender({
   amount,
   isToExecute,
   token,
@@ -419,9 +429,25 @@ export function TerraToEthStepRender({
   onRedeem,
   progress,
   status,
+
+  sourceChainPickerState,
+  destChainPickerState,
 }: TerraToEthStepRenderProps) {
   return (
     <VStack spacing={4}>
+      <FormControl>
+        <FormLabel>Source and Destination Chains</FormLabel>
+        <HStack>
+          <ChainPicker
+            state={sourceChainPickerState}
+            placeholder="Select Source Chain"
+          ></ChainPicker>
+          <ChainPicker
+            state={destChainPickerState}
+            placeholder="Select Destination Chain"
+          ></ChainPicker>
+        </HStack>
+      </FormControl>
       <FormControl>
         <FormLabel>Token to Bridge</FormLabel>
         <Select
@@ -472,3 +498,68 @@ export function TerraToEthStepRender({
     </VStack>
   );
 }
+
+interface ChainOption {
+  key: ChainId;
+  name: string;
+}
+const CHAIN_OPTIONS: ReadonlyArray<ChainOption> = [
+  {
+    key: CHAIN_ID_ETH,
+    name: "Ethereum",
+  },
+  {
+    key: CHAIN_ID_POLYGON,
+    name: "Polygon",
+  },
+  {
+    key: CHAIN_ID_SOLANA,
+    name: "Solana",
+  },
+];
+interface ChainPickerState {
+  selectedChainOption: ChainOption;
+  onChange: React.ChangeEventHandler<HTMLSelectElement>;
+  chainOptions: typeof CHAIN_OPTIONS;
+}
+function useChainPickerState(): ChainPickerState {
+  const [selectedChainOption, setChainOption] = useState<ChainOption>(
+    CHAIN_OPTIONS[2]
+  );
+  const chainOptions = CHAIN_OPTIONS;
+  const onChange: React.ChangeEventHandler<HTMLSelectElement> = useCallback(
+    (event) => {
+      const selectedChainId: ChainId = Number(event.target.value) as ChainId;
+      const newSelectedChainOption = chainOptions.find(
+        (chainOption) => chainOption.key === selectedChainId
+      );
+      if (newSelectedChainOption) {
+        setChainOption(newSelectedChainOption);
+      }
+    },
+    [setChainOption, chainOptions]
+  );
+  return {
+    selectedChainOption,
+    onChange,
+    chainOptions,
+  };
+}
+const ChainPicker: FC<{
+  state: ChainPickerState;
+  placeholder: string;
+}> = ({ state, placeholder }) => {
+  return (
+    <Select
+      placeholder={placeholder || "Select chain"}
+      value={state.selectedChainOption.key}
+      onChange={state.onChange}
+    >
+      {state.chainOptions.map((chainOption) => (
+        <option key={chainOption.key} value={chainOption.key}>
+          {chainOption.name}
+        </option>
+      ))}
+    </Select>
+  );
+};
