@@ -70,19 +70,26 @@ interface EstTx {
   amountStr: string;
 }
 
-function useEstimateTx(amount: string) {
+interface UseEstimateTxArgs {
+  amount: string;
+  sourceChain: ChainOption;
+  destChain: ChainOption;
+  token: TokenOption | null;
+}
+function useEstimateTx({
+  amount,
+  token,
+  destChain,
+}: UseEstimateTxArgs): EstTx | undefined {
   const terraContext = useContext(TerraContext);
   const ethereumContext = useContext(EthereumContext);
+  const solanaWalletState = useSolanaWallet();
   const [estTx, setEstTx] = useState<EstTx>();
-
-  // https://goerli.etherscan.io/address/0xBA62BCfcAaFc6622853cca2BE6Ac7d845BC0f2Dc
-  const TOKEN_ADDRESS = "0xBA62BCfcAaFc6622853cca2BE6Ac7d845BC0f2Dc";
-  const RECIPIENT_ADDRESS = "FSAUrk51D1yfxkgeNhMUo3t9bedMuWt2MJLCAsVHMKHz";
 
   // Run estimates on the amount
   useEffect(() => {
     // To Shuttle
-    if (!amount) {
+    if (!amount || !token) {
       return;
     }
     // Don't run this if amount didn't change from the past estimate
@@ -91,9 +98,24 @@ function useEstimateTx(amount: string) {
       return;
     }
 
+    let recipientPublicKey;
+    switch (destChain.key) {
+      case CHAIN_ID_ETH:
+      case CHAIN_ID_POLYGON:
+        recipientPublicKey = ethereumContext.publicAddress;
+        break;
+      case CHAIN_ID_SOLANA:
+        recipientPublicKey = solanaWalletState.publicKey?.toString();
+        break;
+      default:
+        throw new Error("Unsupported chain");
+    }
+    if (!recipientPublicKey) {
+      throw new Error("No recipient set");
+    }
     const recipientHexString = nativeToHexString(
-      RECIPIENT_ADDRESS,
-      CHAIN_ID_SOLANA
+      recipientPublicKey,
+      destChain.key
     );
     if (!recipientHexString) {
       return;
@@ -101,12 +123,20 @@ function useEstimateTx(amount: string) {
     const recipientAddress = hexToUint8Array(recipientHexString);
 
     setEstTx({
-      amount: utils.parseEther(amount),
+      amount: utils.parseUnits(amount, token.decimals),
       amountStr: amount,
-      tokenAddress: TOKEN_ADDRESS,
+      tokenAddress: token.address,
       recipientAddress,
     });
-  }, [amount, estTx, ethereumContext, terraContext]);
+  }, [
+    amount,
+    estTx,
+    ethereumContext,
+    terraContext,
+    solanaWalletState,
+    token,
+    destChain,
+  ]);
 
   return estTx;
 }
@@ -312,12 +342,14 @@ const TOKEN_OPTIONS: TokenOption[] = [
     symbol: "pUSDC",
     // https://polygonscan.com/token/0x2791bca1f2de4661ed88a30c99a7a9449aa84174
     address: "0x2791bca1f2de4661ed88a30c99a7a9449aa84174",
+    decimals: 6,
   },
   {
     name: "Polygon Wormhole UST",
     symbol: "pwUST",
     // https://polygonscan.com/token/0xe6469ba6d2fd6130788e0ea9c0a0515900563b59
     address: "0xe6469ba6d2fd6130788e0ea9c0a0515900563b59",
+    decimals: 6,
   },
 ];
 
@@ -347,8 +379,16 @@ export function WormholeBridge({
   isToExecute,
   onExecuted = () => {},
 }: StepProps) {
+  const sourceChainPickerState = useChainPickerState();
+  const destChainPickerState = useChainPickerState();
+  const [token, tokenOptions, onPickTokenByAddress] = useTokenOptions();
   const [amount, setAmount] = useState<string>("0");
-  const estTx = useEstimateTx(amount);
+  const estTx = useEstimateTx({
+    amount,
+    token,
+    sourceChain: sourceChainPickerState.selectedChainOption,
+    destChain: destChainPickerState.selectedChainOption,
+  });
   const [status, progress, txHash, signedVAAHex] = useExecuteTx(
     isToExecute,
     estTx
@@ -356,13 +396,10 @@ export function WormholeBridge({
   const onFetchForeignAsset = useForeignAsset();
   const onApproveAmount = useAllowance(estTx);
   const onRedeem = useRedeem(txHash, signedVAAHex);
-  const [token, tokenOptions, onPickTokenByAddress] = useTokenOptions();
   const onChangeToken = useCallback(
     (event) => onPickTokenByAddress(event.target.value),
     [onPickTokenByAddress]
   );
-  const sourceChainPickerState = useChainPickerState();
-  const destChainPickerState = useChainPickerState();
 
   // Call onExecuted callback if status is available
   useEffect(() => {
@@ -396,6 +433,7 @@ interface TokenOption {
   name: string;
   address: string;
   symbol: string;
+  decimals: number;
 }
 
 export interface TerraToEthStepRenderProps {
