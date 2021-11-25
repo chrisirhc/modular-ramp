@@ -11,6 +11,7 @@ import {
   EthereumContext,
   EthereumContextProps,
 } from "./wallet/MetamaskWalletConnector";
+import { WalletConnectWalletProvider } from "./wallet/WalletConnectWalletProvider";
 import {
   SolanaWalletProvider,
   SolanaWalletKey,
@@ -20,10 +21,41 @@ import {
   TerraContext,
   TerraContextProps,
 } from "./TerraWalletConnector";
+import { EthProviderProps } from "./wallet/EtherumWalletBase";
 
 type Props = {
   children: React.ReactNode;
 };
+
+const ETH_WALLET_PROVIDERS = {
+  metamask: {
+    key: "metamask",
+    name: "Metamask",
+    element: EthWalletConnector,
+  },
+  walletconnect: {
+    key: "walletconnect",
+    name: "WalletConnect",
+    element: WalletConnectWalletProvider,
+  },
+};
+const ETH_WALLET_PROVIDER_OPTIONS = [
+  ETH_WALLET_PROVIDERS.metamask,
+  ETH_WALLET_PROVIDERS.walletconnect,
+];
+function useEthWalletProvider(): [
+  string,
+  React.FC<EthProviderProps>,
+  React.Dispatch<React.SetStateAction<keyof typeof ETH_WALLET_PROVIDERS>>
+] {
+  const [walletOptionKey, setWalletOptionKey] =
+    useState<keyof typeof ETH_WALLET_PROVIDERS>("metamask");
+  return [
+    walletOptionKey,
+    ETH_WALLET_PROVIDERS[walletOptionKey].element,
+    setWalletOptionKey,
+  ];
+}
 
 export function WalletConnector({ children }: Props) {
   const [networkType, setNetworkType] =
@@ -44,6 +76,8 @@ export function WalletConnector({ children }: Props) {
     refreshBalance: () => {},
     networkType: DEFAULT_NETWORK_TYPE,
   });
+  const [walletOptionKey, EthWalletProvider, setWalletOptionKey] =
+    useEthWalletProvider();
 
   return (
     <SolanaWalletProvider>
@@ -66,7 +100,24 @@ export function WalletConnector({ children }: Props) {
           </Box>
           <Wrap justify="space-evenly">
             <WrapItem>
-              <EthWalletConnector
+              <Select
+                mb={2}
+                value={walletOptionKey}
+                onChange={(e) =>
+                  setWalletOptionKey(
+                    e.target.value as keyof typeof ETH_WALLET_PROVIDERS
+                  )
+                }
+                borderColor={networkType === "mainnet" ? "red.500" : undefined}
+                bg={networkType === "mainnet" ? "red.500" : "transparent"}
+              >
+                {ETH_WALLET_PROVIDER_OPTIONS.map((option) => (
+                  <option key={option.key} value={option.key}>
+                    {option.name}
+                  </option>
+                ))}
+              </Select>
+              <EthWalletProvider
                 networkType={networkType}
                 onChange={setEthereumContext}
               />
