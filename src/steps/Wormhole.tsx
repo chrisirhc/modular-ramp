@@ -52,6 +52,7 @@ import {
 } from "@certusone/wormhole-sdk";
 import {
   POLYGON_TOKEN_BRIDGE_ADDRESS,
+  POLYGON_BRIDGE_ADDRESS,
   ETH_TOKEN_BRIDGE_ADDRESS,
   SOL_BRIDGE_ADDRESS,
   ETH_BRIDGE_ADDRESS,
@@ -68,6 +69,8 @@ interface EstTx {
   recipientAddress: Uint8Array;
   amount: BigNumberish;
   amountStr: string;
+  sourceChain: ChainOption;
+  destChain: ChainOption;
 }
 
 interface UseEstimateTxArgs {
@@ -79,6 +82,7 @@ interface UseEstimateTxArgs {
 function useEstimateTx({
   amount,
   token,
+  sourceChain,
   destChain,
 }: UseEstimateTxArgs): EstTx | undefined {
   const terraContext = useContext(TerraContext);
@@ -127,6 +131,8 @@ function useEstimateTx({
       amountStr: amount,
       tokenAddress: token.address,
       recipientAddress,
+      sourceChain,
+      destChain,
     });
   }, [
     amount,
@@ -135,6 +141,7 @@ function useEstimateTx({
     terraContext,
     solanaWalletState,
     token,
+    sourceChain,
     destChain,
   ]);
 
@@ -217,13 +224,28 @@ function useExecuteTx(isToExecute: boolean, estTx: EstTx | undefined) {
     console.debug("Executing tx", estTx);
     setProgress("Sending Transaction");
 
+    // Source chain bridge addresses
+    let tokenBridgeAddress: string;
+    let bridgeAddress: string;
+    switch (estTx.sourceChain.key) {
+      case CHAIN_ID_POLYGON:
+        bridgeAddress = POLYGON_BRIDGE_ADDRESS[networkType];
+        tokenBridgeAddress = POLYGON_TOKEN_BRIDGE_ADDRESS[networkType];
+        break;
+      case CHAIN_ID_ETH:
+        bridgeAddress = ETH_BRIDGE_ADDRESS[networkType];
+        tokenBridgeAddress = ETH_TOKEN_BRIDGE_ADDRESS[networkType];
+        break;
+      default:
+        throw new Error("Unsupported source chain");
+    }
     const tx = transferFromEth(
-      ETH_TOKEN_BRIDGE_ADDRESS[networkType],
+      tokenBridgeAddress,
       signer,
       estTx.tokenAddress,
       // TODO: Should use the token's decimals
       estTx.amount,
-      CHAIN_ID_SOLANA,
+      estTx.destChain.key,
       estTx.recipientAddress
     );
 
@@ -233,18 +255,14 @@ function useExecuteTx(isToExecute: boolean, estTx: EstTx | undefined) {
         setProgress("");
         setTxHash(receipt.transactionHash);
 
-        const sequence = parseSequenceFromLogEth(
-          receipt,
-          ETH_BRIDGE_ADDRESS[networkType]
-        );
-        const emitterAddress = getEmitterAddressEth(
-          ETH_TOKEN_BRIDGE_ADDRESS[networkType]
-        );
+        const sequence = parseSequenceFromLogEth(receipt, bridgeAddress);
+        const emitterAddress = getEmitterAddressEth(tokenBridgeAddress);
         // enqueueSnackbar(null, {
         //   content: <Alert severity="info">Fetching VAA</Alert>,
         // });
         const { vaaBytes } = await getSignedVAAWithRetry(
-          CHAIN_ID_ETH,
+          // TODO: Check later whether this is scoped correctly
+          estTx.sourceChain.key,
           emitterAddress,
           sequence.toString(),
           networkType
