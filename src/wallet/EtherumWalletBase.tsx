@@ -10,6 +10,16 @@ const UST_CONTRACT: Record<NetworkType, string> = {
   mainnet: "0xa47c8bf37f92aBed4A126BDA807A7b7498661acD",
 };
 
+export interface EthConnect {
+  setProviderAndSigner: React.Dispatch<
+    React.SetStateAction<{
+      provider: ethers.providers.Web3Provider | null;
+      signer: ethers.providers.JsonRpcSigner | null;
+    } | null>
+  >;
+  setPublicAddress: React.Dispatch<React.SetStateAction<string | null>>;
+}
+
 export type Balance = {
   balance: BigNumber;
   decimals: any;

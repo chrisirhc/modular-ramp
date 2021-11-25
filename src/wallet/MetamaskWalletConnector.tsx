@@ -6,6 +6,7 @@ import detectEthereumProvider from "@metamask/detect-provider";
 import { NetworkType } from "../constants";
 import {
   Balance,
+  EthConnect,
   EthereumContext,
   EthereumContextProps,
   EthWalletConnectorRender,
@@ -83,15 +84,7 @@ export function EthWalletConnector({ networkType, onChange }: Props) {
 function useConnectMetamask({
   setProviderAndSigner,
   setPublicAddress,
-}: {
-  setProviderAndSigner: React.Dispatch<
-    React.SetStateAction<{
-      provider: ethers.providers.Web3Provider | null;
-      signer: ethers.providers.JsonRpcSigner | null;
-    } | null>
-  >;
-  setPublicAddress: React.Dispatch<React.SetStateAction<string | null>>;
-}) {
+}: EthConnect) {
   return connect;
 
   async function connect() {
