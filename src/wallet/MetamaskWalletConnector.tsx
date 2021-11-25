@@ -9,7 +9,9 @@ import {
   EthConnect,
   EthereumContext,
   EthereumContextProps,
+  EthProviderProps,
   EthWalletConnectorRender,
+  useChangeEthereumContext,
   useRefreshBalance,
 } from "./EtherumWalletBase";
 
@@ -18,17 +20,15 @@ const CHAIN_ID: Record<NetworkType, string> = {
   mainnet: "0x1",
 };
 
-type Props = {
-  networkType: NetworkType;
-  onChange: (e: EthereumContextProps) => void;
-};
-
 export { EthereumContext };
 export type { Balance, EthereumContextProps };
 
 const CONNECTED_KEY = "eth_connected";
 
-export function EthWalletConnector({ networkType, onChange }: Props) {
+export function EthWalletConnector({
+  networkType,
+  onChange,
+}: EthProviderProps) {
   const [publicAddress, setPublicAddress] = useState<string | null>(null);
   const [USTBalance, setUSTBalance] = useState<Balance | null>(null);
   const [chainId, setChainId] = useState<string | null>(null);
@@ -36,8 +36,6 @@ export function EthWalletConnector({ networkType, onChange }: Props) {
     provider: ethers.providers.Web3Provider | null;
     signer: ethers.providers.JsonRpcSigner | null;
   } | null>(null);
-  const [shouldRefreshBalance, setShouldRefreshBalance] =
-    useState<boolean>(true);
 
   const connect = useConnectMetamask({
     setProviderAndSigner,
@@ -46,25 +44,21 @@ export function EthWalletConnector({ networkType, onChange }: Props) {
 
   useInitMetamask({ connect, networkType, setChainId });
 
-  useRefreshBalance({
+  const refreshBalance = useRefreshBalance({
     providerAndSigner,
     publicAddress,
-    shouldRefreshBalance,
     networkType,
     setUSTBalance,
-    setShouldRefreshBalance,
   });
 
-  useEffect(() => {
-    onChange({
-      USTBalance,
-      publicAddress,
-      provider: providerAndSigner?.provider || null,
-      signer: providerAndSigner?.signer || null,
-      refreshBalance,
-      networkType,
-    });
-  }, [onChange, USTBalance, publicAddress, providerAndSigner, networkType]);
+  useChangeEthereumContext({
+    onChange,
+    USTBalance,
+    publicAddress,
+    providerAndSigner,
+    refreshBalance,
+    networkType,
+  });
 
   const networkMismatch = chainId !== CHAIN_ID[networkType];
   return (
@@ -75,10 +69,6 @@ export function EthWalletConnector({ networkType, onChange }: Props) {
       USTBalance={USTBalance}
     />
   );
-
-  function refreshBalance() {
-    setShouldRefreshBalance(true);
-  }
 }
 
 function useConnectMetamask({

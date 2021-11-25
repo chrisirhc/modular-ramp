@@ -1,4 +1,4 @@
-import React, { createContext, useEffect, useState } from "react";
+import React, { createContext, useCallback, useEffect, useState } from "react";
 import { Box, Button } from "@chakra-ui/react";
 import { NetworkType } from "../constants";
 import { ethers, utils, BigNumber, providers } from "ethers";
@@ -9,6 +9,11 @@ const UST_CONTRACT: Record<NetworkType, string> = {
   testnet: "0x6cA13a4ab78dd7D657226b155873A04DB929A3A4",
   mainnet: "0xa47c8bf37f92aBed4A126BDA807A7b7498661acD",
 };
+
+export interface EthProviderProps {
+  networkType: NetworkType;
+  onChange: (e: EthereumContextProps) => void;
+}
 
 export interface EthConnect {
   setProviderAndSigner: React.Dispatch<
@@ -85,24 +90,65 @@ export function EthWalletConnectorRender({
   );
 }
 
+export function useChangeEthereumContext({
+  onChange,
+  USTBalance,
+  publicAddress,
+  providerAndSigner,
+  refreshBalance,
+  networkType,
+}: {
+  onChange: (e: EthereumContextProps) => void;
+  USTBalance: Balance | null;
+  publicAddress: string | null;
+  providerAndSigner: {
+    provider: ethers.providers.Web3Provider | null;
+    signer: ethers.providers.JsonRpcSigner | null;
+  } | null;
+  refreshBalance: () => void;
+  networkType: NetworkType;
+}) {
+  useEffect(() => {
+    onChange({
+      USTBalance,
+      publicAddress,
+      provider: providerAndSigner?.provider || null,
+      signer: providerAndSigner?.signer || null,
+      refreshBalance,
+      networkType,
+    });
+  }, [
+    onChange,
+    USTBalance,
+    publicAddress,
+    providerAndSigner,
+    networkType,
+    refreshBalance,
+  ]);
+}
+
 export function useRefreshBalance({
   providerAndSigner,
   publicAddress,
-  shouldRefreshBalance,
   networkType,
   setUSTBalance,
-  setShouldRefreshBalance,
 }: {
   providerAndSigner: {
     provider: ethers.providers.Web3Provider | null;
     signer: ethers.providers.JsonRpcSigner | null;
   } | null;
   publicAddress: string | null;
-  shouldRefreshBalance: boolean;
   networkType: NetworkType;
   setUSTBalance: React.Dispatch<React.SetStateAction<Balance | null>>;
-  setShouldRefreshBalance: React.Dispatch<React.SetStateAction<boolean>>;
 }) {
+  const [shouldRefreshBalance, setShouldRefreshBalance] =
+    useState<boolean>(true);
+
+  const refreshBalance = useCallback(
+    () => setShouldRefreshBalance(true),
+    [setShouldRefreshBalance]
+  );
+
   useEffect(() => {
     let canceled = false;
 
@@ -147,4 +193,6 @@ export function useRefreshBalance({
     setUSTBalance,
     setShouldRefreshBalance,
   ]);
+
+  return refreshBalance;
 }

@@ -4,13 +4,17 @@ import { providers } from "ethers";
 import {
   Balance,
   EthConnect,
-  EthereumContext,
-  EthereumContextProps,
+  EthProviderProps,
   EthWalletConnectorRender,
+  useChangeEthereumContext,
+  useRefreshBalance,
 } from "./EtherumWalletBase";
 
 //  Wrap with Web3Provider from ethers.js
-export const WalletConnectWalletProvider: FC = (props) => {
+export const WalletConnectWalletProvider: FC<EthProviderProps> = ({
+  networkType,
+  onChange,
+}) => {
   const [publicAddress, setPublicAddress] = useState<string | null>(null);
   const [USTBalance, setUSTBalance] = useState<Balance | null>(null);
   const [chainId, setChainId] = useState<string | null>(null);
@@ -24,6 +28,22 @@ export const WalletConnectWalletProvider: FC = (props) => {
   const connect = useConnectWalletconnect({
     setProviderAndSigner,
     setPublicAddress,
+  });
+
+  const refreshBalance = useRefreshBalance({
+    providerAndSigner,
+    publicAddress,
+    networkType,
+    setUSTBalance,
+  });
+
+  useChangeEthereumContext({
+    onChange,
+    USTBalance,
+    publicAddress,
+    providerAndSigner,
+    refreshBalance,
+    networkType,
   });
 
   return (
