@@ -289,9 +289,22 @@ function useAllowance(estTx: EstTx | undefined) {
     return () => {};
   }
 
+  // Source chain bridge addresses
+  let tokenBridgeAddress: string;
+  switch (estTx.sourceChain.key) {
+    case CHAIN_ID_POLYGON:
+      tokenBridgeAddress = POLYGON_TOKEN_BRIDGE_ADDRESS[networkType];
+      break;
+    case CHAIN_ID_ETH:
+      tokenBridgeAddress = ETH_TOKEN_BRIDGE_ADDRESS[networkType];
+      break;
+    default:
+      throw new Error("Unsupported source chain");
+  }
+
   const approveFn = function () {
     return approveEth(
-      ETH_TOKEN_BRIDGE_ADDRESS[networkType],
+      tokenBridgeAddress,
       estTx.tokenAddress,
       signer,
       estTx.amount
