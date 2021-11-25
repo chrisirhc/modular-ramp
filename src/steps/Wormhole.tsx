@@ -463,7 +463,11 @@ export function WormholeBridgeRender({
         </Select>
       </FormControl>
       <FormControl>
-        <FormLabel>Amount to bridge to Ethereum</FormLabel>
+        <FormLabel>
+          Amount to bridge from{" "}
+          {sourceChainPickerState.selectedChainOption.name} to{" "}
+          {destChainPickerState.selectedChainOption.name}
+        </FormLabel>
         <InputGroup>
           <Input
             placeholder="Enter amount"
