@@ -1,4 +1,4 @@
-import { EthereumContextProps } from "./EthWalletConnector";
+import { EthereumContextProps } from "./wallet/MetamaskWalletConnector";
 import { TerraContextProps } from "./TerraWalletConnector";
 
 export type WalletContexts = {

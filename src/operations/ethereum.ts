@@ -1,7 +1,7 @@
 import { ethers, utils } from "ethers";
 import { bech32 } from "bech32";
 import SHUTTLE_ABI from "../shuttle-abi";
-import { EthereumContextProps } from "../EthWalletConnector";
+import { EthereumContextProps } from "../wallet/MetamaskWalletConnector";
 import { TerraContextProps } from "../TerraWalletConnector";
 import { NetworkType } from "../constants";
 

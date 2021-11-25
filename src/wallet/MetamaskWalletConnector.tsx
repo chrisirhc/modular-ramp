@@ -3,13 +3,13 @@ import { Box, Button } from "@chakra-ui/react";
 import { ethers, utils, BigNumber, providers } from "ethers";
 import detectEthereumProvider from "@metamask/detect-provider";
 
-import { NetworkType } from "./constants";
-import { ERC20_ABI } from "./erc20";
+import { NetworkType } from "../constants";
+import { ERC20_ABI } from "../erc20";
 import {
   Balance,
   EthereumContext,
   EthereumContextProps,
-} from "./wallet/EtherumContext";
+} from "./EtherumContext";
 
 const CHAIN_ID: Record<NetworkType, string> = {
   testnet: "0x3",

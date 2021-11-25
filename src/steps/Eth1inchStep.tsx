@@ -10,7 +10,10 @@ import {
 } from "@chakra-ui/react";
 
 import { StepProps } from "../types";
-import { EthereumContext, EthereumContextProps } from "../EthWalletConnector";
+import {
+  EthereumContext,
+  EthereumContextProps,
+} from "../wallet/MetamaskWalletConnector";
 import { TerraContext, TerraContextProps } from "../TerraWalletConnector";
 import {
   estimate as OneInchEstimate,

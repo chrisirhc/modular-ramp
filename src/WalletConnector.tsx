@@ -10,7 +10,7 @@ import {
   EthWalletConnector,
   EthereumContext,
   EthereumContextProps,
-} from "./EthWalletConnector";
+} from "./wallet/MetamaskWalletConnector";
 import {
   SolanaWalletProvider,
   SolanaWalletKey,

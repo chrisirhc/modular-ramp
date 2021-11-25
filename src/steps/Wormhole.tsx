@@ -26,7 +26,10 @@ import { ContractReceipt } from "@ethersproject/contracts";
 import { Connection, clusterApiUrl } from "@solana/web3.js";
 
 import { StepProps } from "../types";
-import { EthereumContext, EthereumContextProps } from "../EthWalletConnector";
+import {
+  EthereumContext,
+  EthereumContextProps,
+} from "../wallet/MetamaskWalletConnector";
 import { TerraContext, TerraContextProps } from "../TerraWalletConnector";
 
 import {

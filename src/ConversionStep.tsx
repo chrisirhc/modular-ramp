@@ -21,7 +21,10 @@ import {
   useColorModeValue,
 } from "@chakra-ui/react";
 
-import { EthereumContext, EthereumContextProps } from "./EthWalletConnector";
+import {
+  EthereumContext,
+  EthereumContextProps,
+} from "./wallet/MetamaskWalletConnector";
 import { TerraContext, TerraContextProps } from "./TerraWalletConnector";
 import {
   TerraToEth,

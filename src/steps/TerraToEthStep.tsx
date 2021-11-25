@@ -18,7 +18,10 @@ import {
 } from "@chakra-ui/react";
 
 import { StepProps } from "../types";
-import { EthereumContext, EthereumContextProps } from "../EthWalletConnector";
+import {
+  EthereumContext,
+  EthereumContextProps,
+} from "../wallet/MetamaskWalletConnector";
 import { TerraContext, TerraContextProps } from "../TerraWalletConnector";
 import { TerraToEth, Run as TerraRun, EstTx } from "../operations/terra";
 import { waitForShuttle as EthWaitForShuttle } from "../operations/ethereum";

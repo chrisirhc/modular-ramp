@@ -9,7 +9,10 @@ import {
 } from "@chakra-ui/react";
 
 import { StepProps } from "../types";
-import { EthereumContext, EthereumContextProps } from "../EthWalletConnector";
+import {
+  EthereumContext,
+  EthereumContextProps,
+} from "../wallet/MetamaskWalletConnector";
 import { TerraContext, TerraContextProps } from "../TerraWalletConnector";
 import { WaitForBalanceChange } from "../operations/terra";
 import { Run as EthereumRun, EthToTerra, PrepTx } from "../operations/ethereum";

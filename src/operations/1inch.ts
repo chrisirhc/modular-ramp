@@ -1,5 +1,5 @@
 import { utils } from "ethers";
-import { EthereumContextProps } from "../EthWalletConnector";
+import { EthereumContextProps } from "../wallet/MetamaskWalletConnector";
 import { PrepTx, UST_CONTRACT } from "./ethereum";
 
 // https://etherscan.io/token/0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48
