@@ -60,7 +60,10 @@ import {
   SOL_TOKEN_BRIDGE_ADDRESS,
 } from "../operations/wormhole";
 import { useSolanaWallet } from "../wallet/SolanaWalletProvider";
-import { signSendAndConfirm } from "../operations/solana";
+import {
+  signSendAndConfirm,
+  useCreateTokenAccount,
+} from "../operations/solana";
 
 WormholeBridge.stepTitle = "Terra to Ethereum Bridge";
 
@@ -148,23 +151,25 @@ function useEstimateTx({
   return estTx;
 }
 
-// TODO: This could be part of Est Tx step.
-function useForeignAsset() {
-  const originAsset = "0xBA62BCfcAaFc6622853cca2BE6Ac7d845BC0f2Dc";
-  const originChain = CHAIN_ID_ETH;
+interface UseForeignAssetArgs {
+  sourceChain: ChainOption;
+  token: TokenOption | null;
+}
+function useForeignAsset({ token, sourceChain }: UseForeignAssetArgs) {
+  const [foreignAsset, setForeignAsset] = useState<string | null>();
   const ethereumContext = useContext(EthereumContext);
   const { networkType } = ethereumContext;
 
-  if (!networkType) {
-    return () => {};
-  }
+  useEffect(() => {
+    if (!token || !networkType) {
+      return;
+    }
 
-  return () => {
     const SOLANA_HOST = clusterApiUrl(
       networkType === "testnet" ? "testnet" : "mainnet-beta"
     );
     const connection = new Connection(SOLANA_HOST, "confirmed");
-    const originAssetHex = nativeToHexString(originAsset, originChain);
+    const originAssetHex = nativeToHexString(token.address, sourceChain.key);
 
     if (!originAssetHex) {
       return;
@@ -173,16 +178,17 @@ function useForeignAsset() {
     const tx = getForeignAssetSolana(
       connection,
       SOL_TOKEN_BRIDGE_ADDRESS[networkType],
-      originChain,
+      sourceChain.key,
       hexToUint8Array(originAssetHex)
     );
 
     tx.then((r) => {
-      console.log(r);
+      // Foreign asset address
+      setForeignAsset(r);
     });
+  }, [networkType, sourceChain, token]);
 
-    return tx;
-  };
+  return foreignAsset;
 }
 
 function useExecuteTx(isToExecute: boolean, estTx: EstTx | undefined) {
@@ -424,7 +430,16 @@ export function WormholeBridge({
     isToExecute,
     estTx
   );
-  const onFetchForeignAsset = useForeignAsset();
+  const foreignAsset = useForeignAsset({
+    token,
+    sourceChain: sourceChainPickerState.selectedChainOption,
+  });
+  const ethereumContext = useContext(EthereumContext);
+  const { networkType } = ethereumContext;
+  const createTokenAccount = useCreateTokenAccount({
+    networkType,
+    targetAsset: foreignAsset,
+  });
   const onApproveAmount = useAllowance(estTx);
   const onRedeem = useRedeem(txHash, signedVAAHex);
   const onChangeToken = useCallback(
@@ -449,8 +464,8 @@ export function WormholeBridge({
       tokenOptions={tokenOptions}
       onChangeToken={onChangeToken}
       onApproveAmount={onApproveAmount}
+      onCreateTokenAccount={createTokenAccount}
       onAmountChanged={(event) => setAmount(event.target.value)}
-      onFetchForeignAsset={onFetchForeignAsset}
       onRedeem={onRedeem}
       progress={progress}
       status={status}
@@ -476,7 +491,7 @@ export interface TerraToEthStepRenderProps {
   onChangeToken: ChangeEventHandler<HTMLSelectElement>;
 
   onApproveAmount: (() => Promise<ContractReceipt>) | (() => void);
-  onFetchForeignAsset: (() => Promise<ContractReceipt>) | (() => void);
+  onCreateTokenAccount: () => void;
   onAmountChanged: ChangeEventHandler<HTMLInputElement>;
   onRedeem: () => void;
   progress: string;
@@ -493,7 +508,7 @@ export function WormholeBridgeRender({
   tokenOptions,
   onChangeToken,
   onApproveAmount,
-  onFetchForeignAsset,
+  onCreateTokenAccount,
   onAmountChanged,
   onRedeem,
   progress,
@@ -557,7 +572,7 @@ export function WormholeBridgeRender({
         </InputGroup>
       </FormControl>
       <HStack>
-        <Button onClick={onFetchForeignAsset}>Fetch Foreign Asset</Button>
+        <Button onClick={onCreateTokenAccount}>Create Token Account</Button>
         <Button onClick={onApproveAmount}>Approve Amount</Button>
         <Button onClick={onRedeem}>Redeem</Button>
       </HStack>
