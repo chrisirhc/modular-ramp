@@ -71,9 +71,9 @@ function useConnectWalletconnect({
     () =>
       new WalletConnectProvider({
         infuraId: "4e4974318a944fdbbe46502c86aedd99",
-        // rpc: {
-        //   137: "https://polygon-rpc.com",
-        // },
+        rpc: {
+          137: "https://polygon-rpc.com",
+        },
       }),
     []
   );
