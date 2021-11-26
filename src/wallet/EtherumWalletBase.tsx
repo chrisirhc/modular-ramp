@@ -55,6 +55,7 @@ function printBalance(bal: Balance | null) {
 
 interface EthWalletConnectorRenderProps {
   connect: () => void;
+  disconnect?: () => void;
   publicAddress: string | null;
   networkMismatch: boolean;
   USTBalance: Balance | null;
@@ -62,14 +63,15 @@ interface EthWalletConnectorRenderProps {
 
 export function EthWalletConnectorRender({
   connect,
+  disconnect = () => {},
   publicAddress,
   networkMismatch,
   USTBalance,
 }: EthWalletConnectorRenderProps) {
   return (
     <Box>
-      <Button onClick={connect} disabled={Boolean(publicAddress)}>
-        {publicAddress ? `Connected` : "Connect"} to Ethereum
+      <Button onClick={publicAddress ? disconnect : connect}>
+        {publicAddress ? `Disconnect from` : "Connect to"} Ethereum
       </Button>
       {networkMismatch ? (
         <Box ps={2} color="red">

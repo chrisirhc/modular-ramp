@@ -1,4 +1,4 @@
-import React, { FC, useEffect, useState, useMemo } from "react";
+import React, { FC, useEffect, useState, useMemo, useCallback } from "react";
 import WalletConnectProvider from "@walletconnect/web3-provider";
 import { providers } from "ethers";
 import {
@@ -18,6 +18,7 @@ export const WalletConnectWalletProvider: FC<EthProviderProps> = ({
   const [publicAddress, setPublicAddress] = useState<string | null>(null);
   const [USTBalance, setUSTBalance] = useState<Balance | null>(null);
   const [chainId, setChainId] = useState<string | null>(null);
+  const [disconnect, setDisconnect] = useState<() => void>(() => {});
   const [providerAndSigner, setProviderAndSigner] = useState<{
     provider: providers.Web3Provider | null;
     signer: providers.JsonRpcSigner | null;
@@ -29,6 +30,11 @@ export const WalletConnectWalletProvider: FC<EthProviderProps> = ({
     setProviderAndSigner,
     setPublicAddress,
   });
+
+  const connectWithDisconnect = useCallback(async () => {
+    const disconnect = await connect();
+    setDisconnect(disconnect);
+  }, [connect, setDisconnect]);
 
   const refreshBalance = useRefreshBalance({
     providerAndSigner,
@@ -48,7 +54,8 @@ export const WalletConnectWalletProvider: FC<EthProviderProps> = ({
 
   return (
     <EthWalletConnectorRender
-      connect={connect}
+      connect={connectWithDisconnect}
+      disconnect={disconnect}
       publicAddress={publicAddress}
       networkMismatch={false}
       USTBalance={USTBalance}
@@ -60,12 +67,13 @@ function useConnectWalletconnect({
   setProviderAndSigner,
   setPublicAddress,
 }: EthConnect) {
-  return connect;
-
-  async function connect() {
+  const connect = useCallback(async () => {
     //  Create WalletConnect Provider
     const wcProvider = new WalletConnectProvider({
       infuraId: "4e4974318a944fdbbe46502c86aedd99",
+      rpc: {
+        137: "https://polygon-rpc.com",
+      },
     });
 
     const provider = new providers.Web3Provider(wcProvider);
@@ -80,5 +88,11 @@ function useConnectWalletconnect({
 
     const publicAddress = await signer.getAddress();
     setPublicAddress(publicAddress);
-  }
+
+    return () => {
+      wcProvider.disconnect();
+    };
+  }, [setProviderAndSigner, setPublicAddress]);
+
+  return connect;
 }
