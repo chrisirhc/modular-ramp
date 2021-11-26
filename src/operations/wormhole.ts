@@ -55,32 +55,32 @@ export async function getSignedVAAWithRetry(
 
 // from wormhole / bridge_ui
 export const POLYGON_TOKEN_BRIDGE_ADDRESS: Record<NetworkType, string> = {
-  testnet: getAddress("0x0290FB167208Af455bB137780163b7B7a9a10C16"),
+  testnet: getAddress("0x377D55a7928c046E18eEbb61977e714d2a76472a"),
   mainnet: getAddress("0x5a58505a96D1dbf8dF91cB21B54419FC36e93fdE"),
 } as const;
 
 export const POLYGON_BRIDGE_ADDRESS: Record<NetworkType, string> = {
-  testnet: getAddress("0xC89Ce4735882C9F0f0FE26686c53074E09B0D550"),
+  testnet: getAddress("0x0CBE91CF822c73C2315FB05100C2F714765d5c20"),
   mainnet: getAddress("0x7A4B5a56256163F07b2C80A7cA55aBE66c4ec4d7"),
 } as const;
 
 export const ETH_BRIDGE_ADDRESS: Record<NetworkType, string> = {
-  testnet: getAddress("0x44F3e7c20850B3B5f3031114726A9240911D912a"),
+  testnet: getAddress("0x706abc4E45D419950511e474C7B9Ed348A4a716c"),
   mainnet: getAddress("0x98f3c9e6E3fAce36bAAd05FE09d375Ef1464288B"),
 } as const;
 
 export const ETH_TOKEN_BRIDGE_ADDRESS: Record<NetworkType, string> = {
   // On Goerli testnet.
-  testnet: getAddress("0xa6CDAddA6e4B6704705b065E01E52e2486c0FBf6"),
+  testnet: getAddress("0xF890982f9310df57d00f659cf4fd87e65adEd8d7"),
   mainnet: getAddress("0x3ee18B2214AFF97000D974cf647E7C347E8fa585"),
 } as const;
 
 export const SOL_BRIDGE_ADDRESS: Record<NetworkType, string> = {
-  testnet: "Brdguy7BmNB4qwEbcqqMbyV5CyJd2sxQNUn6NEpMSsUb",
+  testnet: "3u8hJUVTA4jH1wYAyUur7FFZVQ8H635K3tSHHF4ssjQ5",
   mainnet: "worm2ZoG2kUd4vFXhvjh93UUH596ayRfgQ2MgjNMTth",
 } as const;
 
 export const SOL_TOKEN_BRIDGE_ADDRESS: Record<NetworkType, string> = {
-  testnet: "A4Us8EhCC76XdGAN17L4KpRNEK423nMivVHZzZqFqqBg",
+  testnet: "DZnkkTmCiFWfYTfT41X3Rd1kDgozqzxWaHqsw6W4x2oe",
   mainnet: "wormDTUJ6AWPNvk59vGQbDvGJmqbDTdgWgAqcLBCgUb",
 } as const;
