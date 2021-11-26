@@ -18,7 +18,6 @@ export const WalletConnectWalletProvider: FC<EthProviderProps> = ({
   const [publicAddress, setPublicAddress] = useState<string | null>(null);
   const [USTBalance, setUSTBalance] = useState<Balance | null>(null);
   const [chainId, setChainId] = useState<string | null>(null);
-  const [disconnect, setDisconnect] = useState<() => void>(() => {});
   const [providerAndSigner, setProviderAndSigner] = useState<{
     provider: providers.Web3Provider | null;
     signer: providers.JsonRpcSigner | null;
@@ -26,15 +25,10 @@ export const WalletConnectWalletProvider: FC<EthProviderProps> = ({
   const [shouldRefreshBalance, setShouldRefreshBalance] =
     useState<boolean>(true);
 
-  const connect = useConnectWalletconnect({
+  const [connect, disconnect] = useConnectWalletconnect({
     setProviderAndSigner,
     setPublicAddress,
   });
-
-  const connectWithDisconnect = useCallback(async () => {
-    const disconnect = await connect();
-    setDisconnect(disconnect);
-  }, [connect, setDisconnect]);
 
   const refreshBalance = useRefreshBalance({
     providerAndSigner,
@@ -54,7 +48,7 @@ export const WalletConnectWalletProvider: FC<EthProviderProps> = ({
 
   return (
     <EthWalletConnectorRender
-      connect={connectWithDisconnect}
+      connect={connect}
       disconnect={disconnect}
       publicAddress={publicAddress}
       networkMismatch={false}
@@ -67,13 +61,31 @@ function useConnectWalletconnect({
   setProviderAndSigner,
   setPublicAddress,
 }: EthConnect) {
+  //  Create WalletConnect Provider
+  const wcProvider = useMemo(
+    () =>
+      new WalletConnectProvider({
+        infuraId: "4e4974318a944fdbbe46502c86aedd99",
+        // rpc: {
+        //   137: "https://polygon-rpc.com",
+        // },
+      }),
+    []
+  );
+
   const connect = useCallback(async () => {
-    //  Create WalletConnect Provider
-    const wcProvider = new WalletConnectProvider({
-      infuraId: "4e4974318a944fdbbe46502c86aedd99",
-      rpc: {
-        137: "https://polygon-rpc.com",
-      },
+    console.log("Connecting");
+
+    //  Enable session (triggers QR Code modal)
+    await wcProvider.enable();
+
+    wcProvider.on("chainChanged", (chainId: number) => {
+      console.log(chainId);
+    });
+
+    // Subscribe to session disconnection
+    wcProvider.on("disconnect", (code: number, reason: string) => {
+      console.log(code, reason);
     });
 
     const provider = new providers.Web3Provider(wcProvider);
@@ -83,16 +95,13 @@ function useConnectWalletconnect({
       signer,
     });
 
-    //  Enable session (triggers QR Code modal)
-    await wcProvider.enable();
-
     const publicAddress = await signer.getAddress();
     setPublicAddress(publicAddress);
 
-    return () => {
-      wcProvider.disconnect();
-    };
-  }, [setProviderAndSigner, setPublicAddress]);
+    return () => {};
+  }, [setProviderAndSigner, setPublicAddress, wcProvider]);
 
-  return connect;
+  const disconnect = useCallback(() => wcProvider.disconnect(), [wcProvider]);
+
+  return [connect, disconnect];
 }
