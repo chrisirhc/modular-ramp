@@ -25,10 +25,15 @@ export const WalletConnectWalletProvider: FC<EthProviderProps> = ({
   const [shouldRefreshBalance, setShouldRefreshBalance] =
     useState<boolean>(true);
 
-  const [connect, disconnect] = useConnectWalletconnect({
+  const [connect, disconnectWalletConnect] = useConnectWalletconnect({
     setProviderAndSigner,
     setPublicAddress,
   });
+
+  const disconnect = useCallback(async () => {
+    await disconnectWalletConnect();
+    setPublicAddress(null);
+  }, [disconnectWalletConnect]);
 
   const refreshBalance = useRefreshBalance({
     providerAndSigner,
