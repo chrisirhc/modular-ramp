@@ -153,10 +153,21 @@ function useEstimateTx({
 
 interface UseForeignAssetArgs {
   sourceChain: ChainOption;
+  destChain: ChainOption;
   token: TokenOption | null;
 }
-function useForeignAsset({ token, sourceChain }: UseForeignAssetArgs) {
-  const [foreignAsset, setForeignAsset] = useState<string | null>();
+interface ForeignAssetState {
+  sourceChain: ChainOption;
+  destChain: ChainOption;
+  token: TokenOption;
+  mintAddress: string | null;
+}
+function useForeignAsset({
+  token,
+  sourceChain,
+  destChain,
+}: UseForeignAssetArgs) {
+  const [foreignAsset, setForeignAsset] = useState<ForeignAssetState | null>();
   const ethereumContext = useContext(EthereumContext);
   const { networkType } = ethereumContext;
 
@@ -164,6 +175,15 @@ function useForeignAsset({ token, sourceChain }: UseForeignAssetArgs) {
     if (!token || !networkType) {
       return;
     }
+
+    // TODO: This seems less idiomatic to have this.
+    // Seems like some two-way binding issue. Check back later.
+    // if (
+    //   foreignAsset?.token === token &&
+    //   foreignAsset.sourceChain === sourceChain
+    // ) {
+    //   return;
+    // }
 
     const SOLANA_HOST = clusterApiUrl(
       networkType === "testnet" ? "testnet" : "mainnet-beta"
@@ -175,6 +195,7 @@ function useForeignAsset({ token, sourceChain }: UseForeignAssetArgs) {
       return;
     }
 
+    let cancellation = false;
     const tx = getForeignAssetSolana(
       connection,
       SOL_TOKEN_BRIDGE_ADDRESS[networkType],
@@ -182,11 +203,23 @@ function useForeignAsset({ token, sourceChain }: UseForeignAssetArgs) {
       hexToUint8Array(originAssetHex)
     );
 
-    tx.then((r) => {
+    tx.then((mintAddress) => {
+      if (cancellation) {
+        return;
+      }
       // Foreign asset address
-      setForeignAsset(r);
+      setForeignAsset({
+        sourceChain,
+        destChain,
+        token,
+        mintAddress,
+      });
     });
-  }, [networkType, sourceChain, token]);
+
+    return () => {
+      cancellation = true;
+    };
+  }, [networkType, sourceChain, destChain, token]);
 
   return foreignAsset;
 }
@@ -277,6 +310,7 @@ function useExecuteTx(isToExecute: boolean, estTx: EstTx | undefined) {
         console.log(receipt);
       },
       (e) => {
+        // TODO: Make it pop back to no transaction in progress
         console.error("Error in transaction", e);
         setStatus("Failed");
         setProgress("");
@@ -388,6 +422,13 @@ const TOKEN_OPTIONS: TokenOption[] = [
     address: "0xe6469ba6d2fd6130788e0ea9c0a0515900563b59",
     decimals: 6,
   },
+  {
+    name: "Faucet Token",
+    symbol: "FAU",
+    // https://goerli.etherscan.io/token/0xBA62BCfcAaFc6622853cca2BE6Ac7d845BC0f2Dc
+    address: "0xBA62BCfcAaFc6622853cca2BE6Ac7d845BC0f2Dc",
+    decimals: 18,
+  },
 ];
 
 function useTokenOptions(): [
@@ -433,12 +474,13 @@ export function WormholeBridge({
   const foreignAsset = useForeignAsset({
     token,
     sourceChain: sourceChainPickerState.selectedChainOption,
+    destChain: destChainPickerState.selectedChainOption,
   });
   const ethereumContext = useContext(EthereumContext);
   const { networkType } = ethereumContext;
   const createTokenAccount = useCreateTokenAccount({
     networkType,
-    targetAsset: foreignAsset,
+    targetAsset: foreignAsset?.mintAddress,
   });
   const onApproveAmount = useAllowance(estTx);
   const onRedeem = useRedeem(txHash, signedVAAHex);
