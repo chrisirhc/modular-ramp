@@ -16,7 +16,7 @@ const Template: Story<StepProps> = (args, { argTypes }) => {
     <ChakraProvider>
       <div className="App">
         <WalletConnector>
-          <WormholeBridge {...args} />
+          <WormholeBridge {...args} isToExecute={toExecute} />
         </WalletConnector>
         <input
           type="checkbox"
