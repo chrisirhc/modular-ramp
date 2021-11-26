@@ -497,6 +497,11 @@ export function WormholeBridge({
     onExecuted(status);
   }, [status, onExecuted]);
 
+  const shouldShowAttest = Boolean(foreignAsset && !foreignAsset.mintAddress);
+  const onAttest = useCallback(() => {
+    throw new Error("Not implemented");
+  }, []);
+
   // No constraints, pick whatever you want and handle the estimates
   return (
     <WormholeBridgeRender
@@ -505,6 +510,8 @@ export function WormholeBridge({
       token={token}
       tokenOptions={tokenOptions}
       onChangeToken={onChangeToken}
+      shouldShowAttest={shouldShowAttest}
+      onAttest={onAttest}
       onApproveAmount={onApproveAmount}
       onCreateTokenAccount={createTokenAccount}
       onAmountChanged={(event) => setAmount(event.target.value)}
@@ -532,6 +539,9 @@ export interface TerraToEthStepRenderProps {
   tokenOptions: TokenOption[];
   onChangeToken: ChangeEventHandler<HTMLSelectElement>;
 
+  shouldShowAttest: boolean;
+  onAttest: () => void;
+
   onApproveAmount: (() => Promise<ContractReceipt>) | (() => void);
   onCreateTokenAccount: () => void;
   onAmountChanged: ChangeEventHandler<HTMLInputElement>;
@@ -558,6 +568,9 @@ export function WormholeBridgeRender({
 
   sourceChainPickerState,
   destChainPickerState,
+
+  shouldShowAttest,
+  onAttest,
 }: TerraToEthStepRenderProps) {
   return (
     <VStack spacing={4}>
@@ -587,6 +600,15 @@ export function WormholeBridgeRender({
             </option>
           ))}
         </Select>
+        {shouldShowAttest ? (
+          <VStack>
+            <Text>
+              Wrapped token not found on destination chain. Click "Attest Token"
+              to create it.
+            </Text>
+            <Button onClick={onAttest}>Attest Token</Button>
+          </VStack>
+        ) : null}
       </FormControl>
       <FormControl>
         <FormLabel>
