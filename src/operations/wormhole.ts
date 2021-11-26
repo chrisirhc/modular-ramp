@@ -59,6 +59,11 @@ export const POLYGON_TOKEN_BRIDGE_ADDRESS: Record<NetworkType, string> = {
   mainnet: getAddress("0x5a58505a96D1dbf8dF91cB21B54419FC36e93fdE"),
 } as const;
 
+export const POLYGON_BRIDGE_ADDRESS: Record<NetworkType, string> = {
+  testnet: getAddress("0xC89Ce4735882C9F0f0FE26686c53074E09B0D550"),
+  mainnet: getAddress("0x7A4B5a56256163F07b2C80A7cA55aBE66c4ec4d7"),
+} as const;
+
 export const ETH_BRIDGE_ADDRESS: Record<NetworkType, string> = {
   testnet: getAddress("0x44F3e7c20850B3B5f3031114726A9240911D912a"),
   mainnet: getAddress("0x98f3c9e6E3fAce36bAAd05FE09d375Ef1464288B"),
