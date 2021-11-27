@@ -186,7 +186,7 @@ function useForeignAsset({
     // }
 
     const SOLANA_HOST = clusterApiUrl(
-      networkType === "testnet" ? "testnet" : "mainnet-beta"
+      networkType === "testnet" ? "devnet" : "mainnet-beta"
     );
     const connection = new Connection(SOLANA_HOST, "confirmed");
     const originAssetHex = nativeToHexString(token.address, sourceChain.key);
@@ -372,7 +372,7 @@ function useRedeem(txHash: string, signedVAAHex: string) {
   }
   const isNative = false;
   const SOLANA_HOST = clusterApiUrl(
-    networkType === "testnet" ? "testnet" : "mainnet-beta"
+    networkType === "testnet" ? "devnet" : "mainnet-beta"
   );
   const signedVAA = hexToUint8Array(signedVAAHex);
   const redeemFn = async function () {

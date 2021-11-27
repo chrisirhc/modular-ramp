@@ -44,7 +44,7 @@ export function useCreateTokenAccount({
       return;
     }
     const SOLANA_HOST = clusterApiUrl(
-      networkType === "testnet" ? "testnet" : "mainnet-beta"
+      networkType === "testnet" ? "devnet" : "mainnet-beta"
     );
     (async () => {
       const connection = new Connection(SOLANA_HOST, "confirmed");
