@@ -11,7 +11,7 @@ import {
   Token,
 } from "@solana/spl-token";
 import { NetworkType } from "../constants";
-import { useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useSolanaWallet } from "../wallet/SolanaWalletProvider";
 
 export async function signSendAndConfirm(
@@ -78,4 +78,46 @@ export function useCreateTokenAccount({
   }, [networkType, targetAsset, wallet]);
 
   return handleCreateTokenAccount;
+}
+
+interface UseTokenAccountArgs {
+  networkType: NetworkType | null;
+  targetAsset: string | null | undefined;
+}
+export function useTokenAccount({
+  networkType,
+  targetAsset,
+}: UseTokenAccountArgs) {
+  const [tokenAccount, setTokenAccount] = useState<PublicKey | null>();
+  const wallet = useSolanaWallet();
+  const SOLANA_HOST = clusterApiUrl(
+    networkType === "testnet" ? "devnet" : "mainnet-beta"
+  );
+  useEffect(() => {
+    let canceled = false;
+
+    (async () => {
+      const solPK = wallet.publicKey;
+      if (!targetAsset || !solPK) {
+        return;
+      }
+      const mintPublicKey = new PublicKey(targetAsset);
+      const payerPublicKey = new PublicKey(solPK); // currently assumes the wallet is the owner
+      const associatedAddress = await Token.getAssociatedTokenAddress(
+        ASSOCIATED_TOKEN_PROGRAM_ID,
+        TOKEN_PROGRAM_ID,
+        mintPublicKey,
+        payerPublicKey
+      );
+      if (canceled) {
+        return;
+      }
+      setTokenAccount(associatedAddress);
+    })();
+    return () => {
+      canceled = true;
+    };
+  }, [SOLANA_HOST, targetAsset, wallet.publicKey]);
+
+  return tokenAccount;
 }

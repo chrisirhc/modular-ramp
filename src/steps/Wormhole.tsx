@@ -24,7 +24,7 @@ import {
 import { utils } from "ethers";
 import { BigNumber, BigNumberish } from "@ethersproject/bignumber";
 import { ContractReceipt } from "@ethersproject/contracts";
-import { Connection, clusterApiUrl } from "@solana/web3.js";
+import { Connection, clusterApiUrl, PublicKey } from "@solana/web3.js";
 
 import { StepProps } from "../types";
 import {
@@ -63,6 +63,7 @@ import { useSolanaWallet } from "../wallet/SolanaWalletProvider";
 import {
   signSendAndConfirm,
   useCreateTokenAccount,
+  useTokenAccount,
 } from "../operations/solana";
 
 WormholeBridge.stepTitle = "Terra to Ethereum Bridge";
@@ -81,10 +82,12 @@ interface UseEstimateTxArgs {
   sourceChain: ChainOption;
   destChain: ChainOption;
   token: TokenOption | null;
+  tokenAccount: PublicKey | undefined | null;
 }
 function useEstimateTx({
   amount,
   token,
+  tokenAccount,
   sourceChain,
   destChain,
 }: UseEstimateTxArgs): EstTx | undefined {
@@ -112,14 +115,26 @@ function useEstimateTx({
         recipientPublicKey = ethereumContext.publicAddress;
         break;
       case CHAIN_ID_SOLANA:
-        recipientPublicKey = solanaWalletState.publicKey?.toString();
+        recipientPublicKey = tokenAccount?.toString();
         break;
       default:
         throw new Error("Unsupported chain");
     }
     if (!recipientPublicKey) {
-      throw new Error("No recipient set");
+      return;
     }
+    // TODO: This is incorrect
+    /*
+
+        // use the target's TokenAccount if it exists
+        dispatch(
+          setTargetAddressHex(
+            uint8ArrayToHex(
+              zeroPad(new PublicKey(targetTokenAccountPublicKey).toBytes(), 32)
+            )
+          )
+        );
+    */
     const recipientHexString = nativeToHexString(
       recipientPublicKey,
       destChain.key
@@ -457,13 +472,25 @@ export function WormholeBridge({
   isToExecute,
   onExecuted = () => {},
 }: StepProps) {
+  const ethereumContext = useContext(EthereumContext);
+  const { networkType } = ethereumContext;
   const sourceChainPickerState = useChainPickerState();
   const destChainPickerState = useChainPickerState();
   const [token, tokenOptions, onPickTokenByAddress] = useTokenOptions();
+  const foreignAsset = useForeignAsset({
+    token,
+    sourceChain: sourceChainPickerState.selectedChainOption,
+    destChain: destChainPickerState.selectedChainOption,
+  });
   const [amount, setAmount] = useState<string>("0");
+  const tokenAccount = useTokenAccount({
+    networkType,
+    targetAsset: foreignAsset?.mintAddress,
+  });
   const estTx = useEstimateTx({
     amount,
     token,
+    tokenAccount,
     sourceChain: sourceChainPickerState.selectedChainOption,
     destChain: destChainPickerState.selectedChainOption,
   });
@@ -471,13 +498,6 @@ export function WormholeBridge({
     isToExecute,
     estTx
   );
-  const foreignAsset = useForeignAsset({
-    token,
-    sourceChain: sourceChainPickerState.selectedChainOption,
-    destChain: destChainPickerState.selectedChainOption,
-  });
-  const ethereumContext = useContext(EthereumContext);
-  const { networkType } = ethereumContext;
   const createTokenAccount = useCreateTokenAccount({
     networkType,
     targetAsset: foreignAsset?.mintAddress,
