@@ -161,6 +161,7 @@ function useEstimateTx({
     token,
     sourceChain,
     destChain,
+    tokenAccount,
   ]);
 
   return estTx;
