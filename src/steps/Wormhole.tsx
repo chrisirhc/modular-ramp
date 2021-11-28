@@ -123,18 +123,6 @@ function useEstimateTx({
     if (!recipientPublicKey) {
       return;
     }
-    // TODO: This is incorrect
-    /*
-
-        // use the target's TokenAccount if it exists
-        dispatch(
-          setTargetAddressHex(
-            uint8ArrayToHex(
-              zeroPad(new PublicKey(targetTokenAccountPublicKey).toBytes(), 32)
-            )
-          )
-        );
-    */
     const recipientHexString = nativeToHexString(
       recipientPublicKey,
       destChain.key
