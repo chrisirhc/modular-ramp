@@ -56,6 +56,8 @@ import {
   CHAIN_ID_POLYGON,
   CHAIN_ID_TERRA,
   redeemOnTerra,
+  redeemOnEth,
+  redeemOnEthNative,
 } from "@certusone/wormhole-sdk";
 import {
   POLYGON_TOKEN_BRIDGE_ADDRESS,
@@ -75,6 +77,7 @@ import {
 } from "../operations/solana";
 import { NetworkType } from "../constants";
 import { postWithFees } from "../operations/terra";
+import { JsonRpcSigner } from "@ethersproject/providers";
 
 WormholeBridge.stepTitle = "Terra to Ethereum Bridge";
 
@@ -281,20 +284,11 @@ function useExecuteTx(isToExecute: boolean, estTx: EstTx | undefined) {
     setProgress("Sending Transaction");
 
     // Source chain bridge addresses
-    let tokenBridgeAddress: string;
-    let bridgeAddress: string;
-    switch (estTx.sourceChain.key) {
-      case CHAIN_ID_POLYGON:
-        bridgeAddress = POLYGON_BRIDGE_ADDRESS[networkType];
-        tokenBridgeAddress = POLYGON_TOKEN_BRIDGE_ADDRESS[networkType];
-        break;
-      case CHAIN_ID_ETH:
-        bridgeAddress = ETH_BRIDGE_ADDRESS[networkType];
-        tokenBridgeAddress = ETH_TOKEN_BRIDGE_ADDRESS[networkType];
-        break;
-      default:
-        throw new Error("Unsupported source chain");
-    }
+    const {
+      tokenBridgeAddress,
+      bridgeAddress,
+    }: { tokenBridgeAddress: string; bridgeAddress: string } =
+      getBridgeAddresses(estTx.sourceChain.key, networkType);
     const tx = transferFromEth(
       tokenBridgeAddress,
       signer,
@@ -336,6 +330,24 @@ function useExecuteTx(isToExecute: boolean, estTx: EstTx | undefined) {
   }, [isToExecute, status, estTx, terraContext, ethereumContext]);
 
   return [status, progress, txHash, signedVAAHex];
+}
+
+function getBridgeAddresses(chainId: ChainId, networkType: NetworkType) {
+  let tokenBridgeAddress: string;
+  let bridgeAddress: string;
+  switch (chainId) {
+    case CHAIN_ID_POLYGON:
+      bridgeAddress = POLYGON_BRIDGE_ADDRESS[networkType];
+      tokenBridgeAddress = POLYGON_TOKEN_BRIDGE_ADDRESS[networkType];
+      break;
+    case CHAIN_ID_ETH:
+      bridgeAddress = ETH_BRIDGE_ADDRESS[networkType];
+      tokenBridgeAddress = ETH_TOKEN_BRIDGE_ADDRESS[networkType];
+      break;
+    default:
+      throw new Error("Unsupported source chain");
+  }
+  return { tokenBridgeAddress, bridgeAddress };
 }
 
 function useAllowance(estTx: EstTx | undefined) {
@@ -387,10 +399,22 @@ function useRedeem({ txHash, signedVAAHex, destChain }: UseRedeemArgs) {
   const signedVAA = hexToUint8Array(signedVAAHex);
   const redeemFn = useCallback(
     async function () {
-      if (!txHash || !networkType || !signer) {
+      if (!txHash || !networkType) {
         throw new Error("Missing dependencies");
       }
       switch (destChain.key) {
+        case CHAIN_ID_ETH:
+        case CHAIN_ID_POLYGON:
+          if (!signer) {
+            throw new Error("Missing dependencies");
+          }
+          return await redeemViaEth(
+            signer,
+            signedVAA,
+            networkType,
+            false,
+            destChain.key
+          );
         case CHAIN_ID_TERRA:
           return await redeemViaTerra(terraContext, networkType, signedVAA);
         case CHAIN_ID_SOLANA:
@@ -426,6 +450,20 @@ function useRedeem({ txHash, signedVAAHex, destChain }: UseRedeemArgs) {
     ]
   );
   return redeemFn;
+}
+
+async function redeemViaEth(
+  signer: JsonRpcSigner,
+  signedVAA: Uint8Array,
+  networkType: NetworkType,
+  isNative: boolean,
+  chainId: ChainId
+) {
+  const { tokenBridgeAddress } = getBridgeAddresses(chainId, networkType);
+  const receipt = isNative
+    ? await redeemOnEthNative(tokenBridgeAddress, signer, signedVAA)
+    : await redeemOnEth(tokenBridgeAddress, signer, signedVAA);
+  return receipt;
 }
 
 async function redeemViaTerra(
