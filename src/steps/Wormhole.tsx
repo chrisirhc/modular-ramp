@@ -74,6 +74,7 @@ import {
   signSendAndConfirm,
   useCreateTokenAccount,
   useTokenAccount,
+  getConnection,
 } from "../operations/solana";
 import { NetworkType } from "../constants";
 import { postWithFees } from "../operations/terra";
@@ -205,10 +206,7 @@ function useForeignAsset({
     //   return;
     // }
 
-    const SOLANA_HOST = clusterApiUrl(
-      networkType === "testnet" ? "devnet" : "mainnet-beta"
-    );
-    const connection = new Connection(SOLANA_HOST, "confirmed");
+    const connection = getConnection(networkType);
     const originAssetHex = nativeToHexString(token.address, sourceChain.key);
 
     if (!originAssetHex) {
@@ -393,9 +391,6 @@ function useRedeem({ txHash, signedVAAHex, destChain }: UseRedeemArgs) {
   const terraContext = useContext(TerraContext);
   const wallet = useSolanaWallet();
   const { networkType, signer } = ethereumContext;
-  const SOLANA_HOST = clusterApiUrl(
-    networkType === "testnet" ? "devnet" : "mainnet-beta"
-  );
   const redeemFn = useCallback(
     async function () {
       if (!signedVAAHex) {
@@ -428,8 +423,9 @@ function useRedeem({ txHash, signedVAAHex, destChain }: UseRedeemArgs) {
           if (!solanaSignTransaction || !payerAddress) {
             throw new Error("Missing dependencies");
           }
+          const connection = getConnection(networkType);
           return await redeemViaSolana(
-            SOLANA_HOST,
+            connection,
             solanaSignTransaction,
             networkType,
             payerAddress,
@@ -442,7 +438,6 @@ function useRedeem({ txHash, signedVAAHex, destChain }: UseRedeemArgs) {
       }
     },
     [
-      SOLANA_HOST,
       destChain.key,
       networkType,
       signedVAAHex,
@@ -494,7 +489,7 @@ async function redeemViaTerra(
 }
 
 async function redeemViaSolana(
-  SOLANA_HOST: string,
+  connection: Connection,
   solanaSignTransaction: (transaction: Transaction) => Promise<Transaction>,
   networkType: NetworkType,
   payerAddress: string,
@@ -506,7 +501,6 @@ async function redeemViaSolana(
     return;
   }
 
-  const connection = new Connection(SOLANA_HOST, "confirmed");
   await postVaaSolana(
     connection,
     solanaSignTransaction,

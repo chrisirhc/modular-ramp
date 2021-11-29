@@ -14,6 +14,14 @@ import { NetworkType } from "../constants";
 import { useCallback, useEffect, useState } from "react";
 import { useSolanaWallet } from "../wallet/SolanaWalletProvider";
 
+export function getConnection(networkType: NetworkType) {
+  const host = clusterApiUrl(
+    networkType === "testnet" ? "devnet" : "mainnet-beta"
+  );
+  const connection = new Connection(host, "confirmed");
+  return connection;
+}
+
 export async function signSendAndConfirm(
   wallet: WalletContextState,
   connection: Connection,
@@ -43,11 +51,8 @@ export function useCreateTokenAccount({
     if (!solPK || !targetAsset || !networkType) {
       return;
     }
-    const SOLANA_HOST = clusterApiUrl(
-      networkType === "testnet" ? "devnet" : "mainnet-beta"
-    );
     (async () => {
-      const connection = new Connection(SOLANA_HOST, "confirmed");
+      const connection = getConnection(networkType);
       const mintPublicKey = new PublicKey(targetAsset);
       const payerPublicKey = new PublicKey(solPK); // currently assumes the wallet is the owner
       const associatedAddress = await Token.getAssociatedTokenAddress(
