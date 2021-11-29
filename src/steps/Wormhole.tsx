@@ -381,41 +381,50 @@ function useRedeem({ txHash, signedVAAHex, destChain }: UseRedeemArgs) {
   const terraContext = useContext(TerraContext);
   const wallet = useSolanaWallet();
   const { networkType, signer } = ethereumContext;
-  const solanaSignTransaction = wallet.signTransaction;
-  const payerAddress = wallet.publicKey?.toString();
-
-  if (
-    !txHash ||
-    !networkType ||
-    !signer ||
-    !solanaSignTransaction ||
-    !payerAddress
-  ) {
-    return () => {};
-  }
-  const isNative = false;
   const SOLANA_HOST = clusterApiUrl(
     networkType === "testnet" ? "devnet" : "mainnet-beta"
   );
   const signedVAA = hexToUint8Array(signedVAAHex);
-  const redeemFn = async function () {
-    switch (destChain.key) {
-      case CHAIN_ID_TERRA:
-        return await redeemViaTerra(terraContext, networkType, signedVAA);
-      case CHAIN_ID_SOLANA:
-        return await redeemViaSolana(
-          SOLANA_HOST,
-          solanaSignTransaction,
-          networkType,
-          payerAddress,
-          signedVAA,
-          isNative,
-          wallet
-        );
-      default:
-        throw new Error("Unsupported chain");
-    }
-  };
+  const redeemFn = useCallback(
+    async function () {
+      if (!txHash || !networkType || !signer) {
+        throw new Error("Missing dependencies");
+      }
+      switch (destChain.key) {
+        case CHAIN_ID_TERRA:
+          return await redeemViaTerra(terraContext, networkType, signedVAA);
+        case CHAIN_ID_SOLANA:
+          const isNative = false;
+
+          const solanaSignTransaction = wallet.signTransaction;
+          const payerAddress = wallet.publicKey?.toString();
+          if (!solanaSignTransaction || !payerAddress) {
+            throw new Error("Missing dependencies");
+          }
+          return await redeemViaSolana(
+            SOLANA_HOST,
+            solanaSignTransaction,
+            networkType,
+            payerAddress,
+            signedVAA,
+            isNative,
+            wallet
+          );
+        default:
+          throw new Error("Unsupported chain");
+      }
+    },
+    [
+      SOLANA_HOST,
+      destChain.key,
+      networkType,
+      signedVAA,
+      signer,
+      terraContext,
+      txHash,
+      wallet,
+    ]
+  );
   return redeemFn;
 }
 
