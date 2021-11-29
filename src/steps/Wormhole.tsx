@@ -396,9 +396,12 @@ function useRedeem({ txHash, signedVAAHex, destChain }: UseRedeemArgs) {
   const SOLANA_HOST = clusterApiUrl(
     networkType === "testnet" ? "devnet" : "mainnet-beta"
   );
-  const signedVAA = hexToUint8Array(signedVAAHex);
   const redeemFn = useCallback(
     async function () {
+      if (!signedVAAHex) {
+        throw new Error("No signed VAA. Please wait a bit and try again.");
+      }
+      const signedVAA = hexToUint8Array(signedVAAHex);
       if (!txHash || !networkType) {
         throw new Error("Missing dependencies");
       }
@@ -442,7 +445,7 @@ function useRedeem({ txHash, signedVAAHex, destChain }: UseRedeemArgs) {
       SOLANA_HOST,
       destChain.key,
       networkType,
-      signedVAA,
+      signedVAAHex,
       signer,
       terraContext,
       txHash,
