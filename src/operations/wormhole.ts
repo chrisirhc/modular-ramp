@@ -84,3 +84,13 @@ export const SOL_TOKEN_BRIDGE_ADDRESS: Record<NetworkType, string> = {
   testnet: "DZnkkTmCiFWfYTfT41X3Rd1kDgozqzxWaHqsw6W4x2oe",
   mainnet: "wormDTUJ6AWPNvk59vGQbDvGJmqbDTdgWgAqcLBCgUb",
 } as const;
+
+export const TERRA_BRIDGE_ADDRESS: Record<NetworkType, string> = {
+  testnet: "terra1pd65m0q9tl3v8znnz5f5ltsfegyzah7g42cx5v",
+  mainnet: "terra1dq03ugtd40zu9hcgdzrsq6z2z4hwhc9tqk2uy5",
+} as const;
+
+export const TERRA_TOKEN_BRIDGE_ADDRESS: Record<NetworkType, string> = {
+  testnet: "terra1pseddrv0yfsn76u4zxrjmtf45kdlmalswdv39a",
+  mainnet: "terra10nmmwe8r3g99a9newtqa7a75xfgs2e8z87r2sf",
+} as const;

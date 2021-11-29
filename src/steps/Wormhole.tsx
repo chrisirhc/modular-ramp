@@ -24,7 +24,12 @@ import {
 import { utils } from "ethers";
 import { BigNumber, BigNumberish } from "@ethersproject/bignumber";
 import { ContractReceipt } from "@ethersproject/contracts";
-import { Connection, clusterApiUrl, PublicKey } from "@solana/web3.js";
+import {
+  Connection,
+  clusterApiUrl,
+  PublicKey,
+  Transaction,
+} from "@solana/web3.js";
 
 import { StepProps } from "../types";
 import {
@@ -49,6 +54,8 @@ import {
   getForeignAssetSolana,
   ChainId,
   CHAIN_ID_POLYGON,
+  CHAIN_ID_TERRA,
+  redeemOnTerra,
 } from "@certusone/wormhole-sdk";
 import {
   POLYGON_TOKEN_BRIDGE_ADDRESS,
@@ -58,6 +65,7 @@ import {
   ETH_BRIDGE_ADDRESS,
   getSignedVAAWithRetry,
   SOL_TOKEN_BRIDGE_ADDRESS,
+  TERRA_TOKEN_BRIDGE_ADDRESS,
 } from "../operations/wormhole";
 import { useSolanaWallet } from "../wallet/SolanaWalletProvider";
 import {
@@ -65,6 +73,8 @@ import {
   useCreateTokenAccount,
   useTokenAccount,
 } from "../operations/solana";
+import { NetworkType } from "../constants";
+import { postWithFees } from "../operations/terra";
 
 WormholeBridge.stepTitle = "Terra to Ethereum Bridge";
 
@@ -116,6 +126,9 @@ function useEstimateTx({
         break;
       case CHAIN_ID_SOLANA:
         recipientPublicKey = tokenAccount?.toString();
+        break;
+      case CHAIN_ID_TERRA:
+        recipientPublicKey = terraContext.address;
         break;
       default:
         throw new Error("Unsupported chain");
@@ -358,8 +371,14 @@ function useAllowance(estTx: EstTx | undefined) {
   return approveFn;
 }
 
-function useRedeem(txHash: string, signedVAAHex: string) {
+interface UseRedeemArgs {
+  txHash: string;
+  signedVAAHex: string;
+  destChain: ChainOption;
+}
+function useRedeem({ txHash, signedVAAHex, destChain }: UseRedeemArgs) {
   const ethereumContext = useContext(EthereumContext);
+  const terraContext = useContext(TerraContext);
   const wallet = useSolanaWallet();
   const { networkType, signer } = ethereumContext;
   const solanaSignTransaction = wallet.signTransaction;
@@ -380,34 +399,89 @@ function useRedeem(txHash: string, signedVAAHex: string) {
   );
   const signedVAA = hexToUint8Array(signedVAAHex);
   const redeemFn = async function () {
-    const connection = new Connection(SOLANA_HOST, "confirmed");
-    await postVaaSolana(
-      connection,
-      solanaSignTransaction,
-      SOL_BRIDGE_ADDRESS[networkType],
-      payerAddress,
-      Buffer.from(signedVAA)
-    );
-    // TODO: how do we retry in between these steps
-    const transaction = isNative
-      ? await redeemAndUnwrapOnSolana(
-          connection,
-          SOL_BRIDGE_ADDRESS[networkType],
-          SOL_TOKEN_BRIDGE_ADDRESS[networkType],
+    switch (destChain.key) {
+      case CHAIN_ID_TERRA:
+        return await redeemViaTerra(terraContext, networkType, signedVAA);
+      case CHAIN_ID_SOLANA:
+        return await redeemViaSolana(
+          SOLANA_HOST,
+          solanaSignTransaction,
+          networkType,
           payerAddress,
-          signedVAA
-        )
-      : await redeemOnSolana(
-          connection,
-          SOL_BRIDGE_ADDRESS[networkType],
-          SOL_TOKEN_BRIDGE_ADDRESS[networkType],
-          payerAddress,
-          signedVAA
+          signedVAA,
+          isNative,
+          wallet
         );
-    const txid = await signSendAndConfirm(wallet, connection, transaction);
-    console.log("Transaction", txid);
+      default:
+        throw new Error("Unsupported chain");
+    }
   };
   return redeemFn;
+}
+
+async function redeemViaTerra(
+  terraContext: TerraContextProps,
+  networkType: NetworkType,
+  signedVAA: Uint8Array
+) {
+  if (!terraContext.address) {
+    throw new Error("No address");
+  }
+
+  const msg = await redeemOnTerra(
+    TERRA_TOKEN_BRIDGE_ADDRESS[networkType],
+    terraContext.address,
+    signedVAA
+  );
+  const result = await postWithFees(
+    networkType,
+    terraContext,
+    [msg],
+    "Wormhole - Complete Transfer"
+  );
+
+  return result;
+}
+
+async function redeemViaSolana(
+  SOLANA_HOST: string,
+  solanaSignTransaction: (transaction: Transaction) => Promise<Transaction>,
+  networkType: NetworkType,
+  payerAddress: string,
+  signedVAA: Uint8Array,
+  isNative: boolean,
+  wallet: any
+) {
+  if (!networkType) {
+    return;
+  }
+
+  const connection = new Connection(SOLANA_HOST, "confirmed");
+  await postVaaSolana(
+    connection,
+    solanaSignTransaction,
+    SOL_BRIDGE_ADDRESS[networkType],
+    payerAddress,
+    Buffer.from(signedVAA)
+  );
+  // TODO: how do we retry in between these steps
+  const transaction = isNative
+    ? await redeemAndUnwrapOnSolana(
+        connection,
+        SOL_BRIDGE_ADDRESS[networkType],
+        SOL_TOKEN_BRIDGE_ADDRESS[networkType],
+        payerAddress,
+        signedVAA
+      )
+    : await redeemOnSolana(
+        connection,
+        SOL_BRIDGE_ADDRESS[networkType],
+        SOL_TOKEN_BRIDGE_ADDRESS[networkType],
+        payerAddress,
+        signedVAA
+      );
+  const txid = await signSendAndConfirm(wallet, connection, transaction);
+  console.log("Transaction", txid);
 }
 
 // TODO: Add Polygon information
@@ -492,7 +566,11 @@ export function WormholeBridge({
     targetAsset: foreignAsset?.mintAddress,
   });
   const onApproveAmount = useAllowance(estTx);
-  const onRedeem = useRedeem(txHash, signedVAAHex);
+  const onRedeem = useRedeem({
+    txHash,
+    signedVAAHex,
+    destChain: destChainPickerState.selectedChainOption,
+  });
   const onChangeToken = useCallback(
     (event) => onPickTokenByAddress(event.target.value),
     [onPickTokenByAddress]
@@ -676,6 +754,10 @@ const CHAIN_OPTIONS: ReadonlyArray<ChainOption> = [
   {
     key: CHAIN_ID_SOLANA,
     name: "Solana",
+  },
+  {
+    key: CHAIN_ID_TERRA,
+    name: "Terra",
   },
 ];
 interface ChainPickerState {

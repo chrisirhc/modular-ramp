@@ -12,7 +12,7 @@ import { NetworkInfo } from "@terra-money/wallet-provider";
 import { printTerraAmount, TERRA_DECIMAL } from "../utils";
 import { RefreshBalanceRet, TerraContextProps } from "../TerraWalletConnector";
 import { WalletContexts } from "../types";
-import { TERRA_NETWORKS } from "../constants";
+import { TERRA_NETWORKS, NetworkType } from "../constants";
 
 const MIN_FEE = new Coin("uusd", new Int(1 * TERRA_DECIMAL));
 
@@ -156,4 +156,53 @@ export function getLCDClient({ network }: { network: NetworkInfo | null }) {
     URL,
     chainID,
   });
+}
+
+export function getFcdBase(networkType: NetworkType) {
+  switch (networkType) {
+    case "mainnet":
+      return "https://fcd.terra.dev";
+    case "testnet":
+      return "https://bombay-fcd.terra.dev";
+  }
+}
+
+export function getGasPricesUrl(networkType: NetworkType) {
+  const TERRA_FCD_BASE = getFcdBase(networkType);
+  return `${TERRA_FCD_BASE}/v1/txs/gas_prices`;
+}
+
+export async function postWithFees(
+  networkType: NetworkType,
+  wallet: TerraContextProps,
+  msgs: any[],
+  memo: string
+) {
+  if (!wallet.address || !wallet.post) {
+    throw new Error("No address or post method");
+  }
+
+  // don't try/catch, let errors propagate
+  const lcd = getLCDClient(wallet);
+  //let gasPrices = await lcd.config.gasPrices //Unsure if the values returned from this are hardcoded or not.
+  //Thus, we are going to pull it directly from the current FCD.
+  let gasPrices = await fetch(getGasPricesUrl(networkType))
+    .then((r) => r.json())
+    .then((result) => result.data);
+
+  const feeEstimate = await lcd.tx.estimateFee(wallet.address, [...msgs], {
+    memo,
+    feeDenoms: ["uluna"],
+    gasPrices,
+  });
+
+  const result = await wallet.post({
+    msgs: [...msgs],
+    memo,
+    feeDenoms: ["uluna"],
+    gasPrices,
+    fee: feeEstimate,
+  });
+
+  return result;
 }
