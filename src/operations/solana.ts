@@ -95,9 +95,6 @@ export function useTokenAccount({
 }: UseTokenAccountArgs) {
   const [tokenAccount, setTokenAccount] = useState<PublicKey | null>();
   const wallet = useSolanaWallet();
-  const SOLANA_HOST = clusterApiUrl(
-    networkType === "testnet" ? "devnet" : "mainnet-beta"
-  );
   useEffect(() => {
     let canceled = false;
 
@@ -122,7 +119,7 @@ export function useTokenAccount({
     return () => {
       canceled = true;
     };
-  }, [SOLANA_HOST, targetAsset, wallet.publicKey]);
+  }, [targetAsset, wallet.publicKey]);
 
   return tokenAccount;
 }
