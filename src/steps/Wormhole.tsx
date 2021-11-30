@@ -303,7 +303,7 @@ function useExecuteTx(isToExecute: boolean, estTx: EstTx | undefined) {
     }
   }, [isToExecute, status, estTx, terraContext, ethereumContext]);
 
-  return [status, progress, txHash, signedVAAHex];
+  return [status, progress, signedVAAHex];
 }
 
 async function transferTerra(
