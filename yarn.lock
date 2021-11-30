@@ -2,6 +2,13 @@
 # yarn lockfile v1
 
 
+"@anchor-protocol/anchor-earn@^1.1.1":
+  "integrity" "sha512-iinaTziBEfVHt27zExiRylKnB2QpAyzhLhSdjE1bkSHeMquC9QZgJkgj5RYTek78ccPDDPs5ivCSR7XPA4ub7Q=="
+  "resolved" "https://registry.npmjs.org/@anchor-protocol/anchor-earn/-/anchor-earn-1.1.1.tgz"
+  "version" "1.1.1"
+  dependencies:
+    "@terra-money/terra.js" "^2.0.10"
+
 "@babel/code-frame@^7.0.0", "@babel/code-frame@^7.0.0-beta.36", "@babel/code-frame@^7.10.4", "@babel/code-frame@^7.12.13", "@babel/code-frame@^7.5.5":
   "integrity" "sha512-HV1Cm0Q3ZrpCR93tkWOYiuYIgLxZXZFVG2VgK+MBWjUqZTundupbfx2aXarXuw5Ko5aMcjtJgbSs4vUGBS5v6g=="
   "resolved" "https://registry.npmjs.org/@babel/code-frame/-/code-frame-7.12.13.tgz"
@@ -5224,7 +5231,7 @@
     "@terra-money/terra.js" "^2.0.14"
     "rxjs" "^7.3.0"
 
-"@terra-money/terra.js@^2.0.0", "@terra-money/terra.js@^2.0.14":
+"@terra-money/terra.js@^2.0.0", "@terra-money/terra.js@^2.0.10", "@terra-money/terra.js@^2.0.14":
   "integrity" "sha512-gWWpbKQCEyJZze8ctW3U1noLlOvL2VMBjFFnDLofDZfAaCNHFEyoliV77H277u1SkzVblc6XRPqPojK/aPKOTw=="
   "resolved" "https://registry.npmjs.org/@terra-money/terra.js/-/terra.js-2.0.15.tgz"
   "version" "2.0.15"
