@@ -64,7 +64,7 @@ export const Anchor: FC = () => {
     <VStack>
       <StatGroup>
         <Stat>
-          <StatLabel>Total UST</StatLabel>
+          <StatLabel>Non-deposited UST</StatLabel>
           <StatNumber>{balanceOutput?.total_account_balance_in_ust}</StatNumber>
           <StatHelpText>
             Last updated: {balanceOutput?.timestamp.toString()}
