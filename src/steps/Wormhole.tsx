@@ -298,7 +298,14 @@ function useExecuteTx(isToExecute: boolean, estTx: EstTx | undefined) {
         );
         return;
       case CHAIN_ID_TERRA:
-        transferTerra(terraContext, estTx, networkType, setSignedVAAHex);
+        transferTerra(
+          terraContext,
+          estTx,
+          networkType,
+          setStatus,
+          setProgress,
+          setSignedVAAHex
+        );
         return;
     }
   }, [isToExecute, status, estTx, terraContext, ethereumContext]);
@@ -310,6 +317,8 @@ async function transferTerra(
   terraContext: TerraContextProps,
   estTx: EstTx,
   networkType: NetworkType,
+  setStatus: React.Dispatch<React.SetStateAction<string>>,
+  setProgress: React.Dispatch<React.SetStateAction<string>>,
   setSignedVAAHex: React.Dispatch<React.SetStateAction<string>>
 ) {
   // const amountParsed = parseUnits(amount, decimals).toString();
@@ -350,6 +359,8 @@ async function transferTerra(
     networkType
   );
   setSignedVAAHex(uint8ArrayToHex(vaaBytes));
+  setStatus(`Successfully transacted: ${info.txhash}`);
+  setProgress("");
   console.log(info);
 }
 
