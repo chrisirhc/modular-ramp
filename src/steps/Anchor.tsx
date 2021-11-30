@@ -42,6 +42,17 @@ import {
   EthereumContextProps,
 } from "../wallet/MetamaskWalletConnector";
 import { TerraContext, TerraContextProps } from "../TerraWalletConnector";
+import {
+  AnchorEarn,
+  CHAINS,
+  NETWORKS,
+  DENOMS,
+  Wallet,
+  MnemonicKey,
+} from "@anchor-protocol/anchor-earn";
+import { Msg } from "@terra-money/terra.js";
+import { postWithFees } from "../operations/terra";
+import { NetworkType } from "../constants";
 
 export const Anchor: FC = () => {
   return (
@@ -63,8 +74,53 @@ export const Anchor: FC = () => {
   );
 };
 
+interface DepositArgs {
+  amount: string;
+  networkType: NetworkType;
+  terraContext: TerraContextProps;
+}
+async function deposit({ amount, networkType, terraContext }: DepositArgs) {
+  if (!terraContext.address) {
+    throw new Error("No address");
+  }
+
+  const anchorEarn = new AnchorEarn({
+    chain: CHAINS.TERRA,
+    network: NETWORKS.BOMBAY_12,
+    address: terraContext.address,
+  });
+  await anchorEarn.deposit({
+    currency: DENOMS.UST,
+    amount,
+    customBroadcaster,
+  });
+
+  async function customBroadcaster(tx: Msg[]) {
+    const txResult = await postWithFees(
+      networkType,
+      terraContext,
+      tx,
+      "Deposit into Anchor"
+    );
+    return txResult.result.txhash;
+  }
+}
+
 const Deposit: FC = () => {
-  const [amount, setAmount] = useState();
+  const terraContext = useContext(TerraContext);
+  const { networkType } = useContext(EthereumContext);
+  const [amount, setAmount] = useState<string>("0");
+  const onAmountChanged = useCallback<
+    React.ChangeEventHandler<HTMLInputElement>
+  >((event) => {
+    setAmount(event.target.value);
+  }, []);
+  const handleDeposit = useCallback(() => {
+    if (!networkType) {
+      return;
+    }
+    deposit({ amount, terraContext, networkType });
+  }, [amount, networkType, terraContext]);
   return (
     <VStack>
       <FormControl>
@@ -77,7 +133,7 @@ const Deposit: FC = () => {
             min="0"
             value={amount || ""}
             // disabled={isToExecute}
-            // onChange={onAmountChanged}
+            onChange={onAmountChanged}
           />
           <InputRightElement
             pointerEvents="none"
@@ -88,7 +144,7 @@ const Deposit: FC = () => {
           />
         </InputGroup>
       </FormControl>
-      <Button>Deposit</Button>
+      <Button onClick={handleDeposit}>Deposit</Button>
     </VStack>
   );
 };
