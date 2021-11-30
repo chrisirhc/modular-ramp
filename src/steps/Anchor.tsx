@@ -1,4 +1,4 @@
-import React, { useContext, useState, useCallback, FC } from "react";
+import React, { useContext, useState, useCallback, FC, useEffect } from "react";
 import {
   Button,
   FormControl,
@@ -12,6 +12,11 @@ import {
   Tab,
   TabPanel,
   TabPanels,
+  Stat,
+  StatLabel,
+  StatGroup,
+  StatHelpText,
+  StatNumber,
 } from "@chakra-ui/react";
 
 import { EthereumContext } from "../wallet/MetamaskWalletConnector";
@@ -21,28 +26,58 @@ import {
   CHAINS,
   NETWORKS,
   DENOMS,
+  BalanceOutput,
 } from "@anchor-protocol/anchor-earn";
 import { Msg } from "@terra-money/terra.js";
 import { postWithFees } from "../operations/terra";
 import { NetworkType } from "../constants";
 
 export const Anchor: FC = () => {
+  const terraContext = useContext(TerraContext);
+  const [balanceOutput, setBalanceOutput] = useState<BalanceOutput>();
+  useEffect(() => {
+    if (!terraContext.address) {
+      return;
+    }
+    const anchorEarn = getAnchorEarn(terraContext.address);
+    (async () => {
+      const balanceInfo = await anchorEarn.balance({
+        currencies: [DENOMS.UST],
+      });
+      setBalanceOutput(balanceInfo);
+    })();
+  }, [terraContext.address]);
   return (
-    <Tabs>
-      <TabList>
-        <Tab>Deposit</Tab>
-        <Tab>Withdraw</Tab>
-      </TabList>
+    <VStack>
+      <StatGroup>
+        <Stat>
+          <StatLabel>Total UST</StatLabel>
+          <StatNumber>{balanceOutput?.total_account_balance_in_ust}</StatNumber>
+          <StatHelpText>
+            Last updated: {balanceOutput?.timestamp.toString()}
+          </StatHelpText>
+        </Stat>
+        <Stat>
+          <StatLabel>Deposited UST</StatLabel>
+          <StatNumber>{balanceOutput?.total_deposit_balance_in_ust}</StatNumber>
+        </Stat>
+      </StatGroup>
+      <Tabs>
+        <TabList>
+          <Tab>Deposit</Tab>
+          <Tab>Withdraw</Tab>
+        </TabList>
 
-      <TabPanels>
-        <TabPanel>
-          <Deposit />
-        </TabPanel>
-        <TabPanel>
-          <Withdraw />
-        </TabPanel>
-      </TabPanels>
-    </Tabs>
+        <TabPanels>
+          <TabPanel>
+            <Deposit />
+          </TabPanel>
+          <TabPanel>
+            <Withdraw />
+          </TabPanel>
+        </TabPanels>
+      </Tabs>
+    </VStack>
   );
 };
 
