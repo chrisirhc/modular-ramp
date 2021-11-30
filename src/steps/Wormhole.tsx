@@ -536,6 +536,7 @@ const TOKEN_OPTIONS: TokenOption[] = [
     // https://polygonscan.com/token/0x2791bca1f2de4661ed88a30c99a7a9449aa84174
     address: "0x2791bca1f2de4661ed88a30c99a7a9449aa84174",
     decimals: 6,
+    chainId: CHAIN_ID_POLYGON,
   },
   {
     name: "Polygon Wormhole UST",
@@ -543,17 +544,24 @@ const TOKEN_OPTIONS: TokenOption[] = [
     // https://polygonscan.com/token/0xe6469ba6d2fd6130788e0ea9c0a0515900563b59
     address: "0xe6469ba6d2fd6130788e0ea9c0a0515900563b59",
     decimals: 6,
+    chainId: CHAIN_ID_POLYGON,
   },
+  // For testing only in testned
   {
     name: "Faucet Token",
     symbol: "FAU",
     // https://goerli.etherscan.io/token/0xBA62BCfcAaFc6622853cca2BE6Ac7d845BC0f2Dc
     address: "0xBA62BCfcAaFc6622853cca2BE6Ac7d845BC0f2Dc",
     decimals: 18,
+    chainId: CHAIN_ID_ETH,
   },
 ];
 
-function useTokenOptions(): [
+function useTokenOptions({
+  sourceChain,
+}: {
+  sourceChain: ChainId;
+}): [
   token: TokenOption | null,
   tokenOptions: TokenOption[],
   onPickTokenByAddress: (tokenAddress: string) => void
@@ -562,7 +570,9 @@ function useTokenOptions(): [
   // const ethereumContext = useContext(EthereumContext);
   // const { networkType } = ethereumContext;
   const [tokenOptions, onPickTokenByAddress] = useMemo(() => {
-    const tokenOptions = TOKEN_OPTIONS;
+    const tokenOptions = TOKEN_OPTIONS.filter(
+      ({ chainId }) => chainId === sourceChain
+    );
     const onPickTokenByAddress = (tokenAddress: string) =>
       setToken(
         tokenOptions.find(
@@ -570,7 +580,7 @@ function useTokenOptions(): [
         ) || null
       );
     return [tokenOptions, onPickTokenByAddress];
-  }, []);
+  }, [sourceChain]);
 
   return [token, tokenOptions, onPickTokenByAddress];
 }
@@ -583,7 +593,9 @@ export function WormholeBridge({
   const { networkType } = ethereumContext;
   const sourceChainPickerState = useChainPickerState();
   const destChainPickerState = useChainPickerState();
-  const [token, tokenOptions, onPickTokenByAddress] = useTokenOptions();
+  const [token, tokenOptions, onPickTokenByAddress] = useTokenOptions({
+    sourceChain: sourceChainPickerState.selectedChainOption.key,
+  });
   const foreignAsset = useForeignAsset({
     token,
     sourceChain: sourceChainPickerState.selectedChainOption,
@@ -660,6 +672,7 @@ interface TokenOption {
   address: string;
   symbol: string;
   decimals: number;
+  chainId: ChainId;
 }
 
 export interface TerraToEthStepRenderProps {
