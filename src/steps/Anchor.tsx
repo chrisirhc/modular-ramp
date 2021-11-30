@@ -140,9 +140,10 @@ async function deposit({ amount, networkType, terraContext }: OperationArgs) {
 }
 
 interface HasRefreshBalances {
-  onRefreshBalances: () => void;
+  onRefreshBalances: () => Promise<void>;
 }
 const Deposit: FC<HasRefreshBalances> = ({ onRefreshBalances }) => {
+  const [isLoading, setIsLoading] = useLoader();
   const terraContext = useContext(TerraContext);
   const { networkType } = useContext(EthereumContext);
   const [amount, setAmount] = useState<string>("0");
@@ -155,9 +156,14 @@ const Deposit: FC<HasRefreshBalances> = ({ onRefreshBalances }) => {
     if (!networkType) {
       return;
     }
-    await deposit({ amount, terraContext, networkType });
-    onRefreshBalances();
-  }, [amount, networkType, onRefreshBalances, terraContext]);
+    setIsLoading(true);
+    try {
+      await deposit({ amount, terraContext, networkType });
+      await onRefreshBalances();
+    } finally {
+      setIsLoading(false);
+    }
+  }, [amount, networkType, onRefreshBalances, setIsLoading, terraContext]);
   return (
     <VStack>
       <FormControl>
@@ -181,7 +187,9 @@ const Deposit: FC<HasRefreshBalances> = ({ onRefreshBalances }) => {
           />
         </InputGroup>
       </FormControl>
-      <Button onClick={handleDeposit}>Deposit</Button>
+      <Button isLoading={isLoading} onClick={handleDeposit}>
+        Deposit
+      </Button>
     </VStack>
   );
 };
@@ -204,6 +212,7 @@ async function withdraw({ amount, networkType, terraContext }: OperationArgs) {
 }
 
 const Withdraw: FC<HasRefreshBalances> = ({ onRefreshBalances }) => {
+  const [isLoading, setIsLoading] = useLoader();
   const terraContext = useContext(TerraContext);
   const { networkType } = useContext(EthereumContext);
   const [amount, setAmount] = useState<string>("0");
@@ -216,9 +225,14 @@ const Withdraw: FC<HasRefreshBalances> = ({ onRefreshBalances }) => {
     if (!networkType) {
       return;
     }
-    await withdraw({ amount, terraContext, networkType });
-    onRefreshBalances();
-  }, [amount, networkType, onRefreshBalances, terraContext]);
+    setIsLoading(true);
+    try {
+      await withdraw({ amount, terraContext, networkType });
+      await onRefreshBalances();
+    } finally {
+      setIsLoading(false);
+    }
+  }, [amount, networkType, onRefreshBalances, setIsLoading, terraContext]);
 
   return (
     <VStack>
@@ -243,7 +257,13 @@ const Withdraw: FC<HasRefreshBalances> = ({ onRefreshBalances }) => {
           />
         </InputGroup>
       </FormControl>
-      <Button onClick={handleWithdraw}>Withdraw</Button>
+      <Button isLoading={isLoading} onClick={handleWithdraw}>
+        Withdraw
+      </Button>
     </VStack>
   );
 };
+
+function useLoader() {
+  return useState<boolean>(false);
+}
