@@ -8,7 +8,7 @@ import {
   Int,
   LCDClient,
 } from "@terra-money/terra.js";
-import { NetworkInfo } from "@terra-money/wallet-provider";
+import { NetworkInfo, TxResult } from "@terra-money/wallet-provider";
 import { printTerraAmount, TERRA_DECIMAL } from "../utils";
 import { RefreshBalanceRet, TerraContextProps } from "../TerraWalletConnector";
 import { WalletContexts } from "../types";
@@ -205,4 +205,27 @@ export async function postWithFees(
   });
 
   return result;
+}
+
+export async function waitForTerraExecution(
+  wallet: TerraContextProps,
+  transaction: TxResult
+) {
+  const lcd = getLCDClient(wallet);
+  let info;
+  while (!info) {
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    try {
+      info = await lcd.tx.txInfo(transaction.result.txhash);
+    } catch (e) {
+      console.error(e);
+    }
+  }
+  if (info.code !== undefined) {
+    // error code
+    throw new Error(
+      `Tx ${transaction.result.txhash}: error code ${info.code}: ${info.raw_log}`
+    );
+  }
+  return info;
 }

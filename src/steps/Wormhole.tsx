@@ -58,6 +58,9 @@ import {
   redeemOnTerra,
   redeemOnEth,
   redeemOnEthNative,
+  transferFromTerra,
+  parseSequenceFromLogTerra,
+  getEmitterAddressTerra,
 } from "@certusone/wormhole-sdk";
 import {
   POLYGON_TOKEN_BRIDGE_ADDRESS,
@@ -68,6 +71,7 @@ import {
   getSignedVAAWithRetry,
   SOL_TOKEN_BRIDGE_ADDRESS,
   TERRA_TOKEN_BRIDGE_ADDRESS,
+  TERRA_BRIDGE_ADDRESS,
 } from "../operations/wormhole";
 import { useSolanaWallet } from "../wallet/SolanaWalletProvider";
 import {
@@ -77,7 +81,7 @@ import {
   getConnection,
 } from "../operations/solana";
 import { NetworkType } from "../constants";
-import { postWithFees } from "../operations/terra";
+import { postWithFees, waitForTerraExecution } from "../operations/terra";
 import { JsonRpcSigner } from "@ethersproject/providers";
 
 WormholeBridge.stepTitle = "Terra to Ethereum Bridge";
@@ -281,53 +285,129 @@ function useExecuteTx(isToExecute: boolean, estTx: EstTx | undefined) {
     console.debug("Executing tx", estTx);
     setProgress("Sending Transaction");
 
-    // Source chain bridge addresses
-    const {
-      tokenBridgeAddress,
-      bridgeAddress,
-    }: { tokenBridgeAddress: string; bridgeAddress: string } =
-      getBridgeAddresses(estTx.sourceChain.key, networkType);
-    const tx = transferFromEth(
-      tokenBridgeAddress,
-      signer,
-      estTx.tokenAddress,
-      // TODO: Should use the token's decimals
-      estTx.amount,
-      estTx.destChain.key,
-      estTx.recipientAddress
-    );
-
-    tx.then(
-      async (receipt: ContractReceipt) => {
-        setStatus(`Successfully transacted: ${receipt.transactionHash}`);
-        setProgress("");
-        setTxHash(receipt.transactionHash);
-
-        const sequence = parseSequenceFromLogEth(receipt, bridgeAddress);
-        const emitterAddress = getEmitterAddressEth(tokenBridgeAddress);
-        // enqueueSnackbar(null, {
-        //   content: <Alert severity="info">Fetching VAA</Alert>,
-        // });
-        const { vaaBytes } = await getSignedVAAWithRetry(
-          // TODO: Check later whether this is scoped correctly
-          estTx.sourceChain.key,
-          emitterAddress,
-          sequence.toString(),
-          networkType
+    switch (estTx.sourceChain.key) {
+      case CHAIN_ID_ETH:
+        transferEth(
+          estTx,
+          networkType,
+          signer,
+          setStatus,
+          setProgress,
+          setTxHash,
+          setSignedVAAHex
         );
-        setSignedVAAHex(uint8ArrayToHex(vaaBytes));
-        console.log(receipt);
-      },
-      (e) => {
-        // TODO: Make it pop back to no transaction in progress
-        console.error("Error in transaction", e);
-        setStatus("Failed");
-        setProgress("");
-      }
-    );
+        return;
+      case CHAIN_ID_TERRA:
+        transferTerra(terraContext, estTx, networkType, setSignedVAAHex);
+        return;
+    }
   }, [isToExecute, status, estTx, terraContext, ethereumContext]);
 
   return [status, progress, txHash, signedVAAHex];
+}
+
+async function transferTerra(
+  terraContext: TerraContextProps,
+  estTx: EstTx,
+  networkType: NetworkType,
+  setSignedVAAHex: React.Dispatch<React.SetStateAction<string>>
+) {
+  // const amountParsed = parseUnits(amount, decimals).toString();
+  if (!terraContext.address) {
+    return;
+  }
+
+  const { tokenBridgeAddress } = getBridgeAddresses(
+    CHAIN_ID_TERRA,
+    networkType
+  );
+  const msgs = await transferFromTerra(
+    terraContext.address,
+    tokenBridgeAddress,
+    estTx.tokenAddress,
+    estTx.amount.toString(),
+    estTx.destChain.key,
+    estTx.recipientAddress
+  );
+
+  const result = await postWithFees(
+    networkType,
+    terraContext,
+    msgs,
+    "Wormhole - Initiate Transfer"
+  );
+
+  const info = await waitForTerraExecution(terraContext, result);
+  const sequence = parseSequenceFromLogTerra(info);
+  if (!sequence) {
+    throw new Error("Sequence not found");
+  }
+  const emitterAddress = await getEmitterAddressTerra(tokenBridgeAddress);
+  const { vaaBytes } = await getSignedVAAWithRetry(
+    CHAIN_ID_TERRA,
+    emitterAddress,
+    sequence,
+    networkType
+  );
+  setSignedVAAHex(uint8ArrayToHex(vaaBytes));
+  console.log(info);
+}
+
+function transferEth(
+  estTx: EstTx,
+  networkType: NetworkType,
+  signer: JsonRpcSigner,
+  setStatus: React.Dispatch<React.SetStateAction<string>>,
+  setProgress: React.Dispatch<React.SetStateAction<string>>,
+  setTxHash: React.Dispatch<React.SetStateAction<string>>,
+  setSignedVAAHex: React.Dispatch<React.SetStateAction<string>>
+) {
+  // Source chain bridge addresses
+  const {
+    tokenBridgeAddress,
+    bridgeAddress,
+  }: { tokenBridgeAddress: string; bridgeAddress: string } = getBridgeAddresses(
+    estTx.sourceChain.key,
+    networkType
+  );
+  const tx = transferFromEth(
+    tokenBridgeAddress,
+    signer,
+    estTx.tokenAddress,
+    // TODO: Should use the token's decimals
+    estTx.amount,
+    estTx.destChain.key,
+    estTx.recipientAddress
+  );
+
+  tx.then(
+    async (receipt: ContractReceipt) => {
+      setStatus(`Successfully transacted: ${receipt.transactionHash}`);
+      setProgress("");
+      setTxHash(receipt.transactionHash);
+
+      const sequence = parseSequenceFromLogEth(receipt, bridgeAddress);
+      const emitterAddress = getEmitterAddressEth(tokenBridgeAddress);
+      // enqueueSnackbar(null, {
+      //   content: <Alert severity="info">Fetching VAA</Alert>,
+      // });
+      const { vaaBytes } = await getSignedVAAWithRetry(
+        // TODO: Check later whether this is scoped correctly
+        estTx.sourceChain.key,
+        emitterAddress,
+        sequence.toString(),
+        networkType
+      );
+      setSignedVAAHex(uint8ArrayToHex(vaaBytes));
+      console.log(receipt);
+    },
+    (e) => {
+      // TODO: Make it pop back to no transaction in progress
+      console.error("Error in transaction", e);
+      setStatus("Failed");
+      setProgress("");
+    }
+  );
 }
 
 function getBridgeAddresses(chainId: ChainId, networkType: NetworkType) {
@@ -341,6 +421,10 @@ function getBridgeAddresses(chainId: ChainId, networkType: NetworkType) {
     case CHAIN_ID_ETH:
       bridgeAddress = ETH_BRIDGE_ADDRESS[networkType];
       tokenBridgeAddress = ETH_TOKEN_BRIDGE_ADDRESS[networkType];
+      break;
+    case CHAIN_ID_TERRA:
+      bridgeAddress = TERRA_BRIDGE_ADDRESS[networkType];
+      tokenBridgeAddress = TERRA_TOKEN_BRIDGE_ADDRESS[networkType];
       break;
     default:
       throw new Error("Unsupported source chain");
@@ -365,6 +449,9 @@ function useAllowance(estTx: EstTx | undefined) {
     case CHAIN_ID_ETH:
       tokenBridgeAddress = ETH_TOKEN_BRIDGE_ADDRESS[networkType];
       break;
+    case CHAIN_ID_TERRA:
+      // No approval needed
+      return () => {};
     default:
       throw new Error("Unsupported source chain");
   }
@@ -382,11 +469,10 @@ function useAllowance(estTx: EstTx | undefined) {
 }
 
 interface UseRedeemArgs {
-  txHash: string;
   signedVAAHex: string;
   destChain: ChainOption;
 }
-function useRedeem({ txHash, signedVAAHex, destChain }: UseRedeemArgs) {
+function useRedeem({ signedVAAHex, destChain }: UseRedeemArgs) {
   const ethereumContext = useContext(EthereumContext);
   const terraContext = useContext(TerraContext);
   const wallet = useSolanaWallet();
@@ -397,7 +483,7 @@ function useRedeem({ txHash, signedVAAHex, destChain }: UseRedeemArgs) {
         throw new Error("No signed VAA. Please wait a bit and try again.");
       }
       const signedVAA = hexToUint8Array(signedVAAHex);
-      if (!txHash || !networkType) {
+      if (!networkType) {
         throw new Error("Missing dependencies");
       }
       switch (destChain.key) {
@@ -437,15 +523,7 @@ function useRedeem({ txHash, signedVAAHex, destChain }: UseRedeemArgs) {
           throw new Error("Unsupported chain");
       }
     },
-    [
-      destChain.key,
-      networkType,
-      signedVAAHex,
-      signer,
-      terraContext,
-      txHash,
-      wallet,
-    ]
+    [destChain.key, networkType, signedVAAHex, signer, terraContext, wallet]
   );
   return redeemFn;
 }
@@ -546,6 +624,14 @@ const TOKEN_OPTIONS: TokenOption[] = [
     decimals: 6,
     chainId: CHAIN_ID_POLYGON,
   },
+  {
+    name: "Terra UST",
+    symbol: "UST",
+    // https://polygonscan.com/token/0xe6469ba6d2fd6130788e0ea9c0a0515900563b59
+    address: "uusd",
+    decimals: 6,
+    chainId: CHAIN_ID_TERRA,
+  },
   // For testing only in testned
   {
     name: "Faucet Token",
@@ -613,17 +699,13 @@ export function WormholeBridge({
     sourceChain: sourceChainPickerState.selectedChainOption,
     destChain: destChainPickerState.selectedChainOption,
   });
-  const [status, progress, txHash, signedVAAHex] = useExecuteTx(
-    isToExecute,
-    estTx
-  );
+  const [status, progress, signedVAAHex] = useExecuteTx(isToExecute, estTx);
   const createTokenAccount = useCreateTokenAccount({
     networkType,
     targetAsset: foreignAsset?.mintAddress,
   });
   const onApproveAmount = useAllowance(estTx);
   const onRedeem = useRedeem({
-    txHash,
     signedVAAHex,
     destChain: destChainPickerState.selectedChainOption,
   });
