@@ -1,4 +1,11 @@
-import React, { useContext, useState, useCallback, FC, useEffect } from "react";
+import React, {
+  useContext,
+  useState,
+  useCallback,
+  FC,
+  useEffect,
+  useMemo,
+} from "react";
 import {
   Button,
   FormControl,
@@ -35,18 +42,24 @@ import { NetworkType } from "../constants";
 export const Anchor: FC = () => {
   const terraContext = useContext(TerraContext);
   const [balanceOutput, setBalanceOutput] = useState<BalanceOutput>();
-  useEffect(() => {
+  const anchorEarn = useMemo(() => {
     if (!terraContext.address) {
       return;
     }
-    const anchorEarn = getAnchorEarn(terraContext.address);
-    (async () => {
-      const balanceInfo = await anchorEarn.balance({
-        currencies: [DENOMS.UST],
-      });
-      setBalanceOutput(balanceInfo);
-    })();
+    return getAnchorEarn(terraContext.address);
   }, [terraContext.address]);
+  const refreshBalances = useCallback(async () => {
+    if (!anchorEarn) {
+      return;
+    }
+    const balanceInfo = await anchorEarn.balance({
+      currencies: [DENOMS.UST],
+    });
+    setBalanceOutput(balanceInfo);
+  }, [anchorEarn]);
+  useEffect(() => {
+    refreshBalances();
+  }, [refreshBalances]);
   return (
     <VStack>
       <StatGroup>
@@ -70,10 +83,10 @@ export const Anchor: FC = () => {
 
         <TabPanels>
           <TabPanel>
-            <Deposit />
+            <Deposit onRefreshBalances={refreshBalances} />
           </TabPanel>
           <TabPanel>
-            <Withdraw />
+            <Withdraw onRefreshBalances={refreshBalances} />
           </TabPanel>
         </TabPanels>
       </Tabs>
@@ -126,7 +139,10 @@ async function deposit({ amount, networkType, terraContext }: OperationArgs) {
   });
 }
 
-const Deposit: FC = () => {
+interface HasRefreshBalances {
+  onRefreshBalances: () => void;
+}
+const Deposit: FC<HasRefreshBalances> = ({ onRefreshBalances }) => {
   const terraContext = useContext(TerraContext);
   const { networkType } = useContext(EthereumContext);
   const [amount, setAmount] = useState<string>("0");
@@ -135,12 +151,13 @@ const Deposit: FC = () => {
   >((event) => {
     setAmount(event.target.value);
   }, []);
-  const handleDeposit = useCallback(() => {
+  const handleDeposit = useCallback(async () => {
     if (!networkType) {
       return;
     }
-    deposit({ amount, terraContext, networkType });
-  }, [amount, networkType, terraContext]);
+    await deposit({ amount, terraContext, networkType });
+    onRefreshBalances();
+  }, [amount, networkType, onRefreshBalances, terraContext]);
   return (
     <VStack>
       <FormControl>
@@ -186,7 +203,7 @@ async function withdraw({ amount, networkType, terraContext }: OperationArgs) {
   });
 }
 
-const Withdraw: FC = () => {
+const Withdraw: FC<HasRefreshBalances> = ({ onRefreshBalances }) => {
   const terraContext = useContext(TerraContext);
   const { networkType } = useContext(EthereumContext);
   const [amount, setAmount] = useState<string>("0");
@@ -195,12 +212,13 @@ const Withdraw: FC = () => {
   >((event) => {
     setAmount(event.target.value);
   }, []);
-  const handleWithdraw = useCallback(() => {
+  const handleWithdraw = useCallback(async () => {
     if (!networkType) {
       return;
     }
-    withdraw({ amount, terraContext, networkType });
-  }, [amount, networkType, terraContext]);
+    await withdraw({ amount, terraContext, networkType });
+    onRefreshBalances();
+  }, [amount, networkType, onRefreshBalances, terraContext]);
 
   return (
     <VStack>
