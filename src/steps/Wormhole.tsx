@@ -287,6 +287,7 @@ function useExecuteTx(isToExecute: boolean, estTx: EstTx | undefined) {
 
     switch (estTx.sourceChain.key) {
       case CHAIN_ID_ETH:
+      case CHAIN_ID_POLYGON:
         transferEth(
           estTx,
           networkType,
