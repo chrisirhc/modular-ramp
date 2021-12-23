@@ -12,6 +12,7 @@ import {
   Button,
   FormControl,
   FormLabel,
+  FormErrorMessage,
   Grid,
   Input,
   InputGroup,
@@ -821,12 +822,23 @@ export function WormholeBridgeRender({
             placeholder="Select Source Chain"
           ></ChainPicker>
         </FormControl>
-        <FormControl>
+        <FormControl
+          isInvalid={
+            destChainPickerState.selectedChainOption?.key ===
+            sourceChainPickerState.selectedChainOption?.key
+          }
+        >
           <FormLabel>Destination Chain</FormLabel>
           <ChainPicker
             state={destChainPickerState}
             placeholder="Select Destination Chain"
           ></ChainPicker>
+          {destChainPickerState.selectedChainOption?.key ===
+          sourceChainPickerState.selectedChainOption?.key ? (
+            <FormErrorMessage>
+              Source chain and destination need to be different.
+            </FormErrorMessage>
+          ) : null}
         </FormControl>
       </Grid>
       <FormControl>

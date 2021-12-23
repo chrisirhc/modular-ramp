@@ -165,7 +165,7 @@ function TerraWalletConnectorUI({ networkType, onChange }: Props) {
   return (
     <Box>
       <Button
-        onClick={() => connect(ConnectType.CHROME_EXTENSION)}
+        onClick={() => connect(ConnectType.WALLETCONNECT)}
         disabled={Boolean(wallet)}
       >
         {wallets[0] ? `Connected` : "Connect"} to Terra
