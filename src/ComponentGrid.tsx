@@ -31,7 +31,7 @@ function StepSelector(stepProps: StepProps) {
           onChange={(e) =>
             setStep({ Component: STEPS[Number(e.target.value)] })
           }
-          placeholder="Select Step"
+          placeholder="Select Operation"
           mr="1"
         >
           {STEPS.map((Step, i) => (
@@ -58,7 +58,6 @@ function generateStep() {
 
 export function ComponentGrid() {
   const [steps, setSteps] = useState<StepProps[]>(() => [generateStep()]);
-  const [lastStepExecuted, setLastStepExecuted] = useState<number>(-1);
 
   const allSteps = useMemo(
     () =>
@@ -87,9 +86,9 @@ export function ComponentGrid() {
       <HStack>
         <Button
           colorScheme="blue"
-          onClick={() => setSteps([...steps, { isToExecute: false }])}
+          onClick={() => setSteps([...steps, generateStep()])}
         >
-          Add Component
+          Add Operation
         </Button>
       </HStack>
     </VStack>
