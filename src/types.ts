@@ -7,13 +7,16 @@ export type WalletContexts = {
 };
 
 export interface StepComponent extends React.FunctionComponent<StepProps> {
+  stepType: string;
   stepTitle: string;
 }
 
 // TODO: Does the ConversionStep's state need to be centrally managed? Guess not.
 // That can be a new future feature if needed.
 export interface StepProps {
+  stepType?: string;
   isToExecute: boolean;
   onExecuted?: (status: string) => void;
   onRemoveStep?: () => void;
+  onSetStepType?: (stepType: string) => void;
 }

@@ -25,6 +25,7 @@ function StepSelector(stepProps: StepProps) {
     <Box bg={bg} p={4} shadow="md" borderWidth="1px" borderRadius="md" m={2}>
       <Flex>
         <Select
+          value={stepType}
           onChange={(e) => onSetStepType(e.target.value)}
           placeholder="Select Operation"
           mr="1"
