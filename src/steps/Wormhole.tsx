@@ -12,6 +12,7 @@ import {
   Button,
   FormControl,
   FormLabel,
+  Grid,
   Input,
   InputGroup,
   InputRightElement,
@@ -812,25 +813,29 @@ export function WormholeBridgeRender({
 }: TerraToEthStepRenderProps) {
   return (
     <VStack spacing={4}>
-      <FormControl>
-        <FormLabel>Source and Destination Chains</FormLabel>
-        <HStack>
+      <Grid templateColumns="repeat(2, 1fr)" width="100%">
+        <FormControl>
+          <FormLabel>Source Chain</FormLabel>
           <ChainPicker
             state={sourceChainPickerState}
             placeholder="Select Source Chain"
           ></ChainPicker>
+        </FormControl>
+        <FormControl>
+          <FormLabel>Destination Chain</FormLabel>
           <ChainPicker
             state={destChainPickerState}
             placeholder="Select Destination Chain"
           ></ChainPicker>
-        </HStack>
-      </FormControl>
+        </FormControl>
+      </Grid>
       <FormControl>
         <FormLabel>Token to Bridge</FormLabel>
         <Select
           placeholder="Select token"
           value={token?.address}
           onChange={onChangeToken}
+          disabled={!tokenOptions.length}
         >
           {tokenOptions.map((tokenOption) => (
             <option key={tokenOption.address} value={tokenOption.address}>
@@ -861,7 +866,7 @@ export function WormholeBridgeRender({
             pr="4.5rem"
             min="0"
             value={amount || ""}
-            disabled={isToExecute}
+            disabled={!tokenOptions.length || isToExecute}
             onChange={onAmountChanged}
           />
           <InputRightElement
