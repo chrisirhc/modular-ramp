@@ -1,6 +1,5 @@
 import React from "react";
-import { WalletConnector } from "./WalletConnector";
-import { AllSteps } from "./ConversionStep";
+import App from "./App";
 import { ChakraProvider } from "@chakra-ui/react";
 
 export default {
@@ -10,11 +9,7 @@ export default {
 export function NewApp() {
   return (
     <ChakraProvider>
-      <div className="App">
-        <WalletConnector>
-          <AllSteps />
-        </WalletConnector>
-      </div>
+      <App />
     </ChakraProvider>
   );
 }

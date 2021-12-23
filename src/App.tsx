@@ -1,14 +1,14 @@
 import React from "react";
 import { WalletConnector } from "./WalletConnector";
 import Header from "./Header";
-import { StepsBuilder } from "./StepsBuilder";
+import { ComponentGrid } from "./ComponentGrid";
 
 function App() {
   return (
     <div className="App">
       <Header />
       <WalletConnector>
-        <StepsBuilder />
+        <ComponentGrid />
       </WalletConnector>
     </div>
   );
