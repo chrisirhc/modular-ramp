@@ -1,9 +1,5 @@
-import React from "react";
 import { StepComponent } from "../types";
-import { EthToTerraStep } from "./EthToTerraStep";
-import { TerraToEthStep } from "./TerraToEthStep";
+import { WormholeBridge } from "./Wormhole";
+import { Anchor } from "./Anchor";
 
-export const STEPS: ReadonlyArray<StepComponent> = [
-  EthToTerraStep,
-  TerraToEthStep,
-];
+export const STEPS: ReadonlyArray<StepComponent> = [WormholeBridge, Anchor];

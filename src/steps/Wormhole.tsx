@@ -84,7 +84,7 @@ import { NetworkType } from "../constants";
 import { postWithFees, waitForTerraExecution } from "../operations/terra";
 import { JsonRpcSigner } from "@ethersproject/providers";
 
-WormholeBridge.stepTitle = "Terra to Ethereum Bridge";
+WormholeBridge.stepTitle = "Wormhole Bridge";
 
 interface EstTx {
   tokenAddress: string;

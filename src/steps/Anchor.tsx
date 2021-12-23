@@ -39,7 +39,7 @@ import { Msg } from "@terra-money/terra.js";
 import { postWithFees } from "../operations/terra";
 import { NetworkType } from "../constants";
 
-export const Anchor: FC = () => {
+export function Anchor() {
   const terraContext = useContext(TerraContext);
   const [balanceOutput, setBalanceOutput] = useState<BalanceOutput>();
   const anchorEarn = useMemo(() => {
@@ -92,7 +92,9 @@ export const Anchor: FC = () => {
       </Tabs>
     </VStack>
   );
-};
+}
+
+Anchor.stepTitle = "Anchor";
 
 function getAnchorEarn(address: string) {
   return new AnchorEarn({
