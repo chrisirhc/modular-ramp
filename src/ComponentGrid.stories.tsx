@@ -19,5 +19,21 @@ const Template: Story<{}> = (args, { argTypes }) => (
   </ChakraProvider>
 );
 
-export const Main = Template.bind({});
-Main.args = {};
+export const Empty = Template.bind({});
+Empty.args = {};
+
+export const SavedConfig = Template.bind({});
+SavedConfig.args = {
+  initialState: [
+    {
+      key: 1,
+      isToExecute: false,
+      stepType: "Wormhole Bridge",
+    },
+    {
+      key: 2,
+      isToExecute: false,
+      stepType: "Anchor",
+    },
+  ],
+};
