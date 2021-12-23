@@ -23,7 +23,7 @@ function StepSelector(stepProps: StepProps) {
 
   return (
     <Box bg={bg} p={4} shadow="md" borderWidth="1px" borderRadius="md" m={2}>
-      <Flex>
+      <Flex mb={2}>
         <Select
           value={stepType}
           onChange={(e) => onSetStepType(e.target.value)}

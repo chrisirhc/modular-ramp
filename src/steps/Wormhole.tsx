@@ -878,13 +878,15 @@ export function WormholeBridgeRender({
         <Button onClick={onApproveAmount}>Approve Amount</Button>
         <Button onClick={onRedeem}>Redeem</Button>
       </HStack>
-      <HStack>
-        {progress ? <Spinner /> : null}
-        {status === "Success" ? <Text>🟢</Text> : null}
-        <Text color={status && status !== "Success" ? "red" : "current"}>
-          {progress || status}
-        </Text>
-      </HStack>
+      {progress || status ? (
+        <HStack>
+          {progress ? <Spinner /> : null}
+          {status === "Success" ? <Text>🟢</Text> : null}
+          <Text color={status && status !== "Success" ? "red" : "current"}>
+            {progress || status}
+          </Text>
+        </HStack>
+      ) : null}
     </VStack>
   );
 }
