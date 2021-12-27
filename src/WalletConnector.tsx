@@ -7,7 +7,7 @@ import {
   NETWORK_TYPE_OPTIONS,
 } from "./constants";
 import {
-  EthWalletConnector,
+  MetamaskWalletConnector,
   EthereumContext,
   EthereumContextProps,
 } from "./wallet/MetamaskWalletConnector";
@@ -31,7 +31,7 @@ const ETH_WALLET_PROVIDERS = {
   metamask: {
     key: "metamask",
     name: "Metamask",
-    element: EthWalletConnector,
+    element: MetamaskWalletConnector,
   },
   walletconnect: {
     key: "walletconnect",
@@ -82,9 +82,23 @@ export function WalletConnector({ children }: Props) {
   return (
     <SolanaWalletProvider>
       <Box>
-        <Box p={4} shadow="md" borderWidth="1px" borderRadius="md" m={5}>
-          <Box>
+        <Box
+          p={4}
+          shadow="md"
+          borderWidth="1px"
+          borderRadius="md"
+          m={5}
+          position="relative"
+        >
+          <Box
+            position="relative"
+            width="100px"
+            marginLeft="auto"
+            marginRight="0"
+          >
             <Select
+              size="xs"
+              variant="flushed"
               mb={2}
               value={networkType}
               onChange={(e) => setNetworkType(e.target.value as NetworkType)}

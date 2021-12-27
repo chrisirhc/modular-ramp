@@ -8,8 +8,8 @@ export type BlockChainType = keyof typeof BlockChain;
 export const BLOCKCHAIN_OPTIONS: BlockChainType[] = ["ethereum", "terra"];
 
 export const NETWORK_TYPES = {
-  testnet: "Testnet: Ropsten / Tequila",
-  mainnet: "Main Net",
+  testnet: "Testnet",
+  mainnet: "Mainnet",
 } as const;
 
 export type NetworkType = keyof typeof NETWORK_TYPES;

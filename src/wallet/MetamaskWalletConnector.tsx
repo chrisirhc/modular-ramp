@@ -25,7 +25,7 @@ export type { Balance, EthereumContextProps };
 
 const CONNECTED_KEY = "eth_connected";
 
-export function EthWalletConnector({
+export function MetamaskWalletConnector({
   networkType,
   onChange,
 }: EthProviderProps) {
