@@ -7,7 +7,6 @@ export type WalletContexts = {
 };
 
 export interface StepComponent extends React.FunctionComponent<StepProps> {
-  stepType: string;
   stepTitle: string;
 }
 
