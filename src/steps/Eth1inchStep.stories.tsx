@@ -7,7 +7,7 @@ import { ChakraProvider } from "@chakra-ui/react";
 
 export default {
   component: Eth1inchStep,
-  title: "Eth1inchStep",
+  title: "Step/Eth1inchStep",
 } as Meta;
 
 const Template: Story<StepProps> = (args, { argTypes }) => (

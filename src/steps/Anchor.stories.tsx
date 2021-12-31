@@ -7,7 +7,7 @@ import { ChakraProvider } from "@chakra-ui/react";
 
 export default {
   component: Anchor,
-  title: "Anchor",
+  title: "Step/Anchor",
 } as Meta;
 
 const Template: Story<{}> = (args, { argTypes }) => (

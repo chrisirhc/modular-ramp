@@ -5,7 +5,7 @@ import { ChakraProvider } from "@chakra-ui/react";
 
 export default {
   component: TerraWalletConnector,
-  title: "TerraWalletConnector",
+  title: "Wallet/TerraWalletConnector",
 } as Meta;
 
 const Template: Story<Props> = (args, { argTypes }) => (

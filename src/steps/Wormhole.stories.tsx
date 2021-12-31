@@ -7,7 +7,7 @@ import { ChakraProvider } from "@chakra-ui/react";
 
 export default {
   component: WormholeBridge,
-  title: "WormholeBridge",
+  title: "Step/WormholeBridge",
 } as Meta;
 
 const Template: Story<StepProps> = (args, { argTypes }) => {

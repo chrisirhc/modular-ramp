@@ -6,7 +6,7 @@ import { EthProviderProps } from "./EtherumWalletBase";
 
 export default {
   component: WalletConnectWalletProvider,
-  title: "WalletConnectWalletProvider",
+  title: "Wallet/WalletConnectWalletProvider",
 } as Meta;
 
 const Template: Story<EthProviderProps> = (args, { argTypes }) => (

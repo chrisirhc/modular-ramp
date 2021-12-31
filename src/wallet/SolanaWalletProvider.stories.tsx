@@ -5,7 +5,7 @@ import { ChakraProvider } from "@chakra-ui/react";
 
 export default {
   component: SolanaWalletProvider,
-  title: "SolanaWalletProvider",
+  title: "Wallet/SolanaWalletProvider",
 } as Meta;
 
 const Template: Story<{}> = (args, { argTypes }) => (
