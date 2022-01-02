@@ -1,5 +1,4 @@
 import React, {
-  useContext,
   useEffect,
   useState,
   useRef,
@@ -12,27 +11,22 @@ import {
   Button,
   FormControl,
   FormLabel,
-  FormErrorMessage,
-  Grid,
   Input,
   InputGroup,
   InputRightElement,
-  Spinner,
   Select,
   VStack,
   HStack,
-  Text,
 } from "@chakra-ui/react";
 import { StepProps } from "../types";
 import {
-  SwapTokenInfo,
   StableSwap,
   makeExchange,
   loadExchangeInfo,
   calculateEstimatedSwapOutputAmount,
   calculateSwapPrice,
 } from "@saberhq/stableswap-sdk";
-import { TokenAmount, Token } from "@saberhq/token-utils";
+import { TokenAmount, Token, TokenInfo } from "@saberhq/token-utils";
 import {
   getConnection,
   useCreateTokenAccount,
@@ -171,13 +165,52 @@ export function SaberSwap({}: StepProps) {
   // return <SaberSwapRender></SaberSwapRender>;
 }
 
-interface TokenOption {
-  key: string;
+interface TokenInfoSelectState {
+  selectedTokenInfo: TokenInfo | undefined;
+  onChangeSelect: ChangeEventHandler<HTMLSelectElement>;
+  tokenInfoOptions: TokenInfo[];
+}
+
+export function useTokenInfoSelectState(): TokenInfoSelectState {
+  const [selectedTokenInfo, setSelectedTokenInfo] = useState<TokenInfo>();
+  const tokenInfoOptions = tokenList;
+  const onChangeSelect: ChangeEventHandler<HTMLSelectElement> = useCallback(
+    (event) => {
+      const addressToFind = event.target.value;
+      const tokenInfo = tokenList.find(
+        ({ address }) => address === addressToFind
+      );
+      setSelectedTokenInfo(tokenInfo);
+    },
+    []
+  );
+
+  return { selectedTokenInfo, onChangeSelect, tokenInfoOptions };
+}
+
+function TokenInfoSelect({
+  state: { selectedTokenInfo, onChangeSelect, tokenInfoOptions },
+}: {
+  state: TokenInfoSelectState;
+}) {
+  return (
+    <Select
+      value={selectedTokenInfo?.address}
+      placeholder="Select token"
+      onChange={onChangeSelect}
+    >
+      {tokenInfoOptions.map(({ address, name }) => (
+        <option value={address} key={address}>
+          {name}
+        </option>
+      ))}
+    </Select>
+  );
 }
 
 export interface SaberSwapRenderProps {
-  fromTokenOptions: TokenOption[];
-  toTokenOptions: TokenOption[];
+  fromTokenState: TokenInfoSelectState;
+  toTokenState: TokenInfoSelectState;
   onChangeSetAmount: ChangeEventHandler;
   isExecuting: boolean;
   amount: string;
@@ -186,7 +219,8 @@ export interface SaberSwapRenderProps {
 // (event) => setAmount(event.target.value)
 
 export function SaberSwapRender({
-  fromTokenOptions,
+  fromTokenState,
+  toTokenState,
   onChangeSetAmount,
   amount,
   isExecuting,
@@ -196,19 +230,11 @@ export function SaberSwapRender({
       <HStack>
         <FormControl>
           <FormLabel>From Token</FormLabel>
-          <Select placeholder="Select token">
-            {fromTokenOptions.map(({ key }) => (
-              <option value="option1" key={key}>
-                Option 1
-              </option>
-            ))}
-          </Select>
+          <TokenInfoSelect state={fromTokenState} />
         </FormControl>
         <FormControl>
           <FormLabel>To Token</FormLabel>
-          <Select placeholder="Select token">
-            <option value="option1">Option 1</option>
-          </Select>
+          <TokenInfoSelect state={toTokenState} />
         </FormControl>
       </HStack>
       <FormControl>
@@ -232,6 +258,10 @@ export function SaberSwapRender({
           />
         </InputGroup>
       </FormControl>
+      <HStack>
+        <Button>Create Token Account</Button>
+        <Button>Swap</Button>
+      </HStack>
       {/* <ApproveButton amount={amount} ethereumContext={ethereumContext} />
       {progress ? <Spinner /> : null}
       {progress || status} */}
