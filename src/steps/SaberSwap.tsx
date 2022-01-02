@@ -132,11 +132,8 @@ export function SaberSwap({}: StepProps) {
         exchangeInfo,
         fromAmount
       );
-
-      const minimumAmountOut = estimate.outputAmount.toU64();
-
       console.log(estimate);
-
+      const minimumAmountOut = estimate.outputAmount.toU64();
       const swapArg = {
         userAuthority,
         userSource,
@@ -148,18 +145,16 @@ export function SaberSwap({}: StepProps) {
       };
 
       console.log(swapArg);
-
       const instruction = s.swap(swapArg);
-
-      console.log("instruction", instruction);
-
       const { blockhash } = await connection.getRecentBlockhash();
       const t = new Transaction({
         recentBlockhash: blockhash,
         feePayer: wallet.publicKey,
       });
       t.add(instruction);
-      signSendAndConfirm(wallet, connection, t);
+
+      // Trigger this later
+      // signSendAndConfirm(wallet, connection, t);
     });
 
     return () => {
@@ -168,7 +163,11 @@ export function SaberSwap({}: StepProps) {
   }, [wallet, sourceTokenAccount, destTokenAccount]);
 
   // Make sure the token account is created. Otherwise, the transaction will fail.
-  return <button onClick={createTokenAccount}>Create account</button>;
+  return (
+    <VStack>
+      <button onClick={createTokenAccount}>Create account</button>
+    </VStack>
+  );
   // return <SaberSwapRender></SaberSwapRender>;
 }
 
