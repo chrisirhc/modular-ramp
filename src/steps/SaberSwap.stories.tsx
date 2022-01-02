@@ -50,12 +50,12 @@ const RenderTemplate: Story<SaberSwapRenderProps> = (args, { argTypes }) => {
 export const Render = RenderTemplate.bind({});
 Render.args = {
   fromTokenState: {
-    selectedTokenInfo: tokenList[0],
+    selectedTokenInfo: tokenList[1],
     tokenInfoOptions: tokenList,
     onChangeSelect: () => {},
   },
   toTokenState: {
-    selectedTokenInfo: tokenList[1],
+    selectedTokenInfo: tokenList[2],
     tokenInfoOptions: tokenList,
     onChangeSelect: () => {},
   },

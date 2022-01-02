@@ -44,17 +44,19 @@ SaberSwap.stepTitle = "SaberSwap";
 export function SaberSwap({}: StepProps) {
   const networkType: NetworkType = "testnet";
   const wallet = useSolanaWallet();
+  const fromTokenState = useTokenInfoSelectState();
+  const toTokenState = useTokenInfoSelectState();
   const sourceTokenAccount = useTokenAccount({
     networkType,
-    targetAsset: "2tWC4JAdL4AxEFJySziYJfsAnW2MHKRo98vbAPiRDSk8",
+    targetAsset: fromTokenState.selectedTokenInfo?.address,
   });
   const destTokenAccount = useTokenAccount({
     networkType,
-    targetAsset: "EJwZgeZrdC8TXTQbQBoL6bfuAnFUUy1PVCMB4DYPzVaS",
+    targetAsset: toTokenState.selectedTokenInfo?.address,
   });
   const createTokenAccount = useCreateTokenAccount({
     networkType,
-    targetAsset: "EJwZgeZrdC8TXTQbQBoL6bfuAnFUUy1PVCMB4DYPzVaS",
+    targetAsset: toTokenState.selectedTokenInfo?.address,
   });
 
   useEffect(() => {
@@ -238,7 +240,7 @@ export function SaberSwapRender({
         </FormControl>
       </HStack>
       <FormControl>
-        <FormLabel>Amount</FormLabel>
+        <FormLabel>From Amount</FormLabel>
         <InputGroup>
           <Input
             placeholder="Enter amount"
@@ -254,7 +256,28 @@ export function SaberSwapRender({
             color="gray.300"
             fontSize="1.2em"
             width="4.5rem"
-            children="UST"
+            children={fromTokenState.selectedTokenInfo?.symbol}
+          />
+        </InputGroup>
+      </FormControl>
+      <FormControl>
+        <FormLabel>To Amount</FormLabel>
+        <InputGroup>
+          <Input
+            placeholder="Enter amount"
+            type="number"
+            pr="4.5rem"
+            min="0"
+            value={amount || ""}
+            readOnly
+            disabled={isExecuting}
+          />
+          <InputRightElement
+            pointerEvents="none"
+            color="gray.300"
+            fontSize="1.2em"
+            width="4.5rem"
+            children={toTokenState.selectedTokenInfo?.symbol}
           />
         </InputGroup>
       </FormControl>
