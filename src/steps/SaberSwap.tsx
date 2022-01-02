@@ -28,6 +28,9 @@ import {
   SwapTokenInfo,
   StableSwap,
   makeExchange,
+  loadExchangeInfo,
+  calculateEstimatedSwapOutputAmount,
+  calculateSwapPrice,
 } from "@saberhq/stableswap-sdk";
 import { TokenAmount, Token } from "@saberhq/token-utils";
 import {
@@ -91,7 +94,7 @@ export function SaberSwap({}: StepProps) {
     let canceled = false;
     // Use this to test effects
     const s = StableSwap.loadFromExchange(connection, exchange);
-    s.then((s) => {
+    s.then(async (s) => {
       if (canceled) {
         return;
       }
@@ -113,21 +116,37 @@ export function SaberSwap({}: StepProps) {
       );
 
       const token = new Token(tokenList[1]);
-      const amountIn: u64 = TokenAmount.parse(token, "1").toU64();
+      const fromAmount = TokenAmount.parse(token, "1");
+      const amountIn: u64 = fromAmount.toU64();
 
       console.log("sourceTokenAccount", sourceTokenAccount);
       console.log("destTokenAccount", destTokenAccount);
       console.log("amountIn", amountIn);
 
-      // s.swap({
-      //   userAuthority,
-      //   userSource,
-      //   userDestination,
-      //   poolSource,
-      //   poolDestination,
-      //   amountIn,
-      //   minimumAmountOut,
-      // });
+      const exchangeInfo = await loadExchangeInfo(connection, exchange, s);
+      const swapPrice = calculateSwapPrice(exchangeInfo);
+      console.log(swapPrice);
+
+      const estimate = calculateEstimatedSwapOutputAmount(
+        exchangeInfo,
+        fromAmount
+      );
+
+      const minimumAmountOut = estimate.outputAmount.toU64();
+
+      console.log(estimate);
+
+      const instruction = s.swap({
+        userAuthority,
+        userSource,
+        userDestination,
+        poolSource,
+        poolDestination,
+        amountIn,
+        minimumAmountOut,
+      });
+
+      console.log("instruction", instruction);
     });
 
     return () => {
