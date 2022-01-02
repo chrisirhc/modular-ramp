@@ -88,43 +88,51 @@ export function SaberSwap({}: StepProps) {
     }
     console.log(exchange);
 
+    let canceled = false;
     // Use this to test effects
-    // const s = StableSwap.loadFromExchange(connection, exchange);
-    // s.then((s) => {
-    //   console.log("StableSwap ready", s);
+    const s = StableSwap.loadFromExchange(connection, exchange);
+    s.then((s) => {
+      if (canceled) {
+        return;
+      }
+      console.log("StableSwap ready", s);
 
-    //   const userAuthority = wallet.publicKey;
-    //   const userDestination = destTokenAccount;
-    //   if (!userAuthority || !userDestination) {
-    //     return;
-    //   }
-    //   // Source token account "USDC"
-    //   const userSource = new PublicKey(sourceTokenAccount);
+      const userAuthority = wallet.publicKey;
+      const userDestination = destTokenAccount;
+      if (!userAuthority || !userDestination) {
+        return;
+      }
+      // Source token account "USDC"
+      const userSource = new PublicKey(sourceTokenAccount);
 
-    //   const poolSource = new PublicKey(
-    //     "9tcUgn5Fcbkh1Q1GLKQceAgKt576c8w5MuskH1cSi9x5"
-    //   );
-    //   const poolDestination = new PublicKey(
-    //     "4VtqtD2M5Jb1Du6RQ8YZepFuhFpSZhEjR7Ch3nJAdyLS"
-    //   );
+      const poolSource = new PublicKey(
+        "9tcUgn5Fcbkh1Q1GLKQceAgKt576c8w5MuskH1cSi9x5"
+      );
+      const poolDestination = new PublicKey(
+        "4VtqtD2M5Jb1Du6RQ8YZepFuhFpSZhEjR7Ch3nJAdyLS"
+      );
 
-    //   const token = new Token(tokenList[1]);
+      const token = new Token(tokenList[1]);
+      const amountIn: u64 = TokenAmount.parse(token, "1").toU64();
 
-    //   // const amountIn: u64 = TokenAmount.parseFromString(token, "1");
+      console.log("sourceTokenAccount", sourceTokenAccount);
+      console.log("destTokenAccount", destTokenAccount);
+      console.log("amountIn", amountIn);
 
-    //   console.log("sourceTokenAccount", sourceTokenAccount);
-    //   console.log("destTokenAccount", destTokenAccount);
+      // s.swap({
+      //   userAuthority,
+      //   userSource,
+      //   userDestination,
+      //   poolSource,
+      //   poolDestination,
+      //   amountIn,
+      //   minimumAmountOut,
+      // });
+    });
 
-    //   // s.swap({
-    //   //   userAuthority,
-    //   //   userSource,
-    //   //   userDestination,
-    //   //   poolSource,
-    //   //   poolDestination,
-    //   //   amountIn,
-    //   //   minimumAmountOut,
-    //   // });
-    // });
+    return () => {
+      canceled = true;
+    };
   }, [wallet, sourceTokenAccount, destTokenAccount]);
   return null;
   // return <SaberSwapRender></SaberSwapRender>;
