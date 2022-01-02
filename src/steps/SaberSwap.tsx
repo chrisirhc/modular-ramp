@@ -37,9 +37,10 @@ import {
   getConnection,
   useCreateTokenAccount,
   useTokenAccount,
+  signSendAndConfirm,
 } from "../operations/solana";
 import { useSolanaWallet } from "../wallet/SolanaWalletProvider";
-import { PublicKey } from "@solana/web3.js";
+import { PublicKey, Transaction } from "@solana/web3.js";
 import { NetworkType } from "../constants";
 import { tokenList } from "../operations/saber";
 import { u64 } from "@solana/spl-token";
@@ -136,7 +137,7 @@ export function SaberSwap({}: StepProps) {
 
       console.log(estimate);
 
-      const instruction = s.swap({
+      const swapArg = {
         userAuthority,
         userSource,
         userDestination,
@@ -144,16 +145,30 @@ export function SaberSwap({}: StepProps) {
         poolDestination,
         amountIn,
         minimumAmountOut,
-      });
+      };
+
+      console.log(swapArg);
+
+      const instruction = s.swap(swapArg);
 
       console.log("instruction", instruction);
+
+      const { blockhash } = await connection.getRecentBlockhash();
+      const t = new Transaction({
+        recentBlockhash: blockhash,
+        feePayer: wallet.publicKey,
+      });
+      t.add(instruction);
+      signSendAndConfirm(wallet, connection, t);
     });
 
     return () => {
       canceled = true;
     };
   }, [wallet, sourceTokenAccount, destTokenAccount]);
-  return null;
+
+  // Make sure the token account is created. Otherwise, the transaction will fail.
+  return <button onClick={createTokenAccount}>Create account</button>;
   // return <SaberSwapRender></SaberSwapRender>;
 }
 
