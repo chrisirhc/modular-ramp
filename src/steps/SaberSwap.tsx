@@ -36,7 +36,7 @@ import {
 import { useSolanaWallet } from "../wallet/SolanaWalletProvider";
 import { PublicKey, Transaction } from "@solana/web3.js";
 import { NetworkType } from "../constants";
-import { tokenList } from "../operations/saber";
+import { swapList, tokenList } from "../operations/saber";
 import { u64 } from "@solana/spl-token";
 
 SaberSwap.stepTitle = "SaberSwap";
@@ -59,22 +59,34 @@ export function SaberSwap({}: StepProps) {
     targetAsset: toTokenState.selectedTokenInfo?.address,
   });
 
+  const swap = useMemo(() => {
+    if (!fromTokenState.selectedTokenInfo || !toTokenState.selectedTokenInfo) {
+      return;
+    }
+    // Find the matching based on from and to token
+    const tokenA = fromTokenState.selectedTokenInfo.address;
+    const tokenB = toTokenState.selectedTokenInfo.address;
+    const swapCandidate = swapList.find(
+      ({ underlyingTokens }) =>
+        (underlyingTokens[0] === tokenA && underlyingTokens[1] === tokenB) ||
+        (underlyingTokens[1] === tokenA && underlyingTokens[0] === tokenB)
+    );
+    return swapCandidate;
+  }, [fromTokenState, toTokenState]);
+
+  console.log("Swap find", swap);
+
   useEffect(() => {
-    if (!wallet.publicKey || !sourceTokenAccount) {
+    if (
+      !wallet.publicKey ||
+      !sourceTokenAccount ||
+      !fromTokenState.selectedTokenInfo ||
+      !swap
+    ) {
       return;
     }
     const connection = getConnection(networkType);
-    /*
-      "name": "UST-USDC",
-      From https://github.com/saber-hq/saber-registry-dist/blob/23c9cb584e3e115a5af2e0ac2ad99a08e4e27177/data/swaps.mainnet.json#L1656
-
-      "swapAccount": "KwnjUuZhTMTSGAaavkLEmSyfobY16JNH4poL9oeeEvE",
-      "swapAuthority": "9osV5a7FXEjuMujxZJGBRXVAyQ5fJfBFNkyAf6fSz9kw"
-    */
-    const swapAccount = new PublicKey(
-      // "KwnjUuZhTMTSGAaavkLEmSyfobY16JNH4poL9oeeEvE"
-      "8Uq15j3bmhMAhLjRYh8RsobfcAMhMsgPgJgPCdjxCZv5"
-    );
+    const swapAccount = new PublicKey(swap.addresses.swapAccount);
 
     const exchange = makeExchange({
       swapAccount,
@@ -95,6 +107,14 @@ export function SaberSwap({}: StepProps) {
       if (canceled) {
         return;
       }
+
+      if (
+        !wallet.publicKey ||
+        !sourceTokenAccount ||
+        !fromTokenState.selectedTokenInfo
+      ) {
+        return;
+      }
       console.log("StableSwap ready", s);
 
       const userAuthority = wallet.publicKey;
@@ -105,15 +125,12 @@ export function SaberSwap({}: StepProps) {
       // Source token account "USDC"
       const userSource = new PublicKey(sourceTokenAccount);
 
-      const poolSource = new PublicKey(
-        "9tcUgn5Fcbkh1Q1GLKQceAgKt576c8w5MuskH1cSi9x5"
-      );
-      const poolDestination = new PublicKey(
-        "4VtqtD2M5Jb1Du6RQ8YZepFuhFpSZhEjR7Ch3nJAdyLS"
-      );
+      // May not be right
+      const poolSource = new PublicKey(swap.underlyingTokens[0]);
+      const poolDestination = new PublicKey(swap.underlyingTokens[1]);
 
-      const token = new Token(tokenList[1]);
-      const fromAmount = TokenAmount.parse(token, "1");
+      const fromToken = new Token(fromTokenState.selectedTokenInfo);
+      const fromAmount = TokenAmount.parse(fromToken, "1");
       const amountIn: u64 = fromAmount.toU64();
 
       console.log("sourceTokenAccount", sourceTokenAccount);
@@ -160,11 +177,14 @@ export function SaberSwap({}: StepProps) {
 
   // Make sure the token account is created. Otherwise, the transaction will fail.
   return (
-    <VStack>
-      <button onClick={createTokenAccount}>Create account</button>
-    </VStack>
+    <SaberSwapRender
+      fromTokenState={fromTokenState}
+      toTokenState={toTokenState}
+      onChangeSetAmount={() => {}}
+      amount={"10"}
+      isExecuting={false}
+    ></SaberSwapRender>
   );
-  // return <SaberSwapRender></SaberSwapRender>;
 }
 
 interface TokenInfoSelectState {
@@ -187,7 +207,14 @@ export function useTokenInfoSelectState(): TokenInfoSelectState {
     []
   );
 
-  return { selectedTokenInfo, onChangeSelect, tokenInfoOptions };
+  return useMemo(
+    () => ({
+      selectedTokenInfo,
+      onChangeSelect,
+      tokenInfoOptions,
+    }),
+    [selectedTokenInfo, tokenInfoOptions, onChangeSelect]
+  );
 }
 
 function TokenInfoSelect({
@@ -235,52 +262,54 @@ export function SaberSwapRender({
           <TokenInfoSelect state={fromTokenState} />
         </FormControl>
         <FormControl>
+          <FormLabel>From Amount</FormLabel>
+          <InputGroup>
+            <Input
+              placeholder="Enter amount"
+              type="number"
+              pr="4.5rem"
+              min="0"
+              value={amount || ""}
+              disabled={isExecuting}
+              onChange={onChangeSetAmount}
+            />
+            <InputRightElement
+              pointerEvents="none"
+              color="gray.300"
+              fontSize="1.2em"
+              width="4.5rem"
+              children={fromTokenState.selectedTokenInfo?.symbol}
+            />
+          </InputGroup>
+        </FormControl>
+      </HStack>
+      <HStack>
+        <FormControl>
           <FormLabel>To Token</FormLabel>
           <TokenInfoSelect state={toTokenState} />
         </FormControl>
+        <FormControl>
+          <FormLabel>To Amount</FormLabel>
+          <InputGroup>
+            <Input
+              placeholder="Enter amount"
+              type="number"
+              pr="4.5rem"
+              min="0"
+              value={amount || ""}
+              readOnly
+              disabled={isExecuting}
+            />
+            <InputRightElement
+              pointerEvents="none"
+              color="gray.300"
+              fontSize="1.2em"
+              width="4.5rem"
+              children={toTokenState.selectedTokenInfo?.symbol}
+            />
+          </InputGroup>
+        </FormControl>
       </HStack>
-      <FormControl>
-        <FormLabel>From Amount</FormLabel>
-        <InputGroup>
-          <Input
-            placeholder="Enter amount"
-            type="number"
-            pr="4.5rem"
-            min="0"
-            value={amount || ""}
-            disabled={isExecuting}
-            onChange={onChangeSetAmount}
-          />
-          <InputRightElement
-            pointerEvents="none"
-            color="gray.300"
-            fontSize="1.2em"
-            width="4.5rem"
-            children={fromTokenState.selectedTokenInfo?.symbol}
-          />
-        </InputGroup>
-      </FormControl>
-      <FormControl>
-        <FormLabel>To Amount</FormLabel>
-        <InputGroup>
-          <Input
-            placeholder="Enter amount"
-            type="number"
-            pr="4.5rem"
-            min="0"
-            value={amount || ""}
-            readOnly
-            disabled={isExecuting}
-          />
-          <InputRightElement
-            pointerEvents="none"
-            color="gray.300"
-            fontSize="1.2em"
-            width="4.5rem"
-            children={toTokenState.selectedTokenInfo?.symbol}
-          />
-        </InputGroup>
-      </FormControl>
       <HStack>
         <Button>Create Token Account</Button>
         <Button>Swap</Button>
