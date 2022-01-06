@@ -58,6 +58,12 @@ export function SaberSwap({}: StepProps) {
     networkType,
     targetAsset: toTokenState.selectedTokenInfo?.address,
   });
+  const [amount, setAmount] = useState<string>();
+  const [estimatedAmountOut, setEstimatedAmountOut] = useState<string>();
+
+  const onChangeSetAmount = useCallback((event) => {
+    setAmount(event.target.value);
+  }, []);
 
   const swap = useMemo(() => {
     if (!fromTokenState.selectedTokenInfo || !toTokenState.selectedTokenInfo) {
@@ -111,7 +117,8 @@ export function SaberSwap({}: StepProps) {
       if (
         !wallet.publicKey ||
         !sourceTokenAccount ||
-        !fromTokenState.selectedTokenInfo
+        !fromTokenState.selectedTokenInfo ||
+        !amount
       ) {
         return;
       }
@@ -130,7 +137,7 @@ export function SaberSwap({}: StepProps) {
       const poolDestination = new PublicKey(swap.underlyingTokens[1]);
 
       const fromToken = new Token(fromTokenState.selectedTokenInfo);
-      const fromAmount = TokenAmount.parse(fromToken, "1");
+      const fromAmount = TokenAmount.parse(fromToken, amount);
       const amountIn: u64 = fromAmount.toU64();
 
       console.log("sourceTokenAccount", sourceTokenAccount);
@@ -145,6 +152,8 @@ export function SaberSwap({}: StepProps) {
         exchangeInfo,
         fromAmount
       );
+      setEstimatedAmountOut(estimate.outputAmount.toString());
+
       console.log(estimate);
       const minimumAmountOut = estimate.outputAmount.toU64();
       const swapArg = {
@@ -173,15 +182,23 @@ export function SaberSwap({}: StepProps) {
     return () => {
       canceled = true;
     };
-  }, [wallet, sourceTokenAccount, destTokenAccount]);
+  }, [
+    wallet,
+    sourceTokenAccount,
+    destTokenAccount,
+    fromTokenState.selectedTokenInfo,
+    swap,
+    amount,
+  ]);
 
   // Make sure the token account is created. Otherwise, the transaction will fail.
   return (
     <SaberSwapRender
       fromTokenState={fromTokenState}
       toTokenState={toTokenState}
-      onChangeSetAmount={() => {}}
-      amount={"10"}
+      onChangeSetAmount={onChangeSetAmount}
+      amount={amount || ""}
+      estimatedAmountOut={estimatedAmountOut || ""}
       isExecuting={false}
     ></SaberSwapRender>
   );
@@ -243,6 +260,7 @@ export interface SaberSwapRenderProps {
   onChangeSetAmount: ChangeEventHandler;
   isExecuting: boolean;
   amount: string;
+  estimatedAmountOut: string;
 }
 
 // (event) => setAmount(event.target.value)
@@ -252,6 +270,7 @@ export function SaberSwapRender({
   toTokenState,
   onChangeSetAmount,
   amount,
+  estimatedAmountOut,
   isExecuting,
 }: SaberSwapRenderProps) {
   return (
@@ -296,7 +315,7 @@ export function SaberSwapRender({
               type="number"
               pr="4.5rem"
               min="0"
-              value={amount || ""}
+              value={estimatedAmountOut || ""}
               readOnly
               disabled={isExecuting}
             />
