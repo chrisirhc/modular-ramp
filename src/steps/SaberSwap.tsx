@@ -37,13 +37,16 @@ import {
 import { useSolanaWallet } from "../wallet/SolanaWalletProvider";
 import { PublicKey, Transaction } from "@solana/web3.js";
 import { NetworkType } from "../constants";
-import { swapList, tokenList } from "../operations/saber";
+import {
+  mainnetSwapList as swapList,
+  mainnetTokenList as tokenList,
+} from "../operations/saber";
 import { u64 } from "@solana/spl-token";
 
 SaberSwap.stepTitle = "SaberSwap";
 
 export function SaberSwap({}: StepProps) {
-  const networkType: NetworkType = "testnet";
+  const networkType: NetworkType = "mainnet";
   const wallet = useSolanaWallet();
   const fromTokenState = useTokenInfoSelectState();
   const toTokenState = useTokenInfoSelectState();
@@ -89,6 +92,7 @@ export function SaberSwap({}: StepProps) {
       !wallet.publicKey ||
       !sourceTokenAccount ||
       !fromTokenState.selectedTokenInfo ||
+      !toTokenState.selectedTokenInfo ||
       !swap
     ) {
       return;
@@ -98,9 +102,9 @@ export function SaberSwap({}: StepProps) {
 
     const exchange = makeExchange({
       swapAccount,
-      lpToken: new PublicKey(tokenList[0].address),
-      tokenA: tokenList[1],
-      tokenB: tokenList[2],
+      lpToken: new PublicKey(swap.addresses.lpTokenMint),
+      tokenA: fromTokenState.selectedTokenInfo,
+      tokenB: toTokenState.selectedTokenInfo,
     });
 
     if (!exchange) {
@@ -231,7 +235,7 @@ export function SaberSwap({}: StepProps) {
       onChangeSetAmount={onChangeSetAmount}
       onClickSwap={onClickSwap}
       amount={amount || ""}
-      estimatedAmountOut={estimatedAmountOut?.toString() || ""}
+      estimatedAmountOut={estimatedAmountOut?.asNumber || ""}
       isExecuting={false}
     ></SaberSwapRender>
   );
@@ -294,7 +298,7 @@ export interface SaberSwapRenderProps {
   onClickSwap: MouseEventHandler;
   isExecuting: boolean;
   amount: string;
-  estimatedAmountOut: string;
+  estimatedAmountOut: string | number;
 }
 
 // (event) => setAmount(event.target.value)
