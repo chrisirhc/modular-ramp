@@ -177,9 +177,14 @@ export function SaberSwap({}: StepProps) {
     // Source token account "USDC"
     const userSource = new PublicKey(sourceTokenAccount);
 
-    // May not be right
-    const poolSource = new PublicKey(swap.underlyingTokens[0]);
-    const poolDestination = new PublicKey(swap.underlyingTokens[1]);
+    const tokenAIsFromToken =
+      fromTokenState.selectedTokenInfo.address === swap.underlyingTokens[0];
+    const poolSource = new PublicKey(
+      swap.addresses.reserves[tokenAIsFromToken ? 0 : 1]
+    );
+    const poolDestination = new PublicKey(
+      swap.addresses.reserves[tokenAIsFromToken ? 1 : 0]
+    );
 
     const userAuthority = wallet.publicKey;
     const userDestination = destTokenAccount;
