@@ -64,7 +64,6 @@ export function SaberSwap({}: StepProps) {
     targetAsset: toTokenState.selectedTokenInfo?.address,
   });
   const [amount, setAmount] = useState<string>();
-  const [estimatedAmountOut, setEstimatedAmountOut] = useState<TokenAmount>();
   const [stableSwap, setStableSwap] = useState<StableSwap>();
   const [exchangeInfo, setExchangeInfo] = useState<IExchangeInfo>();
 
@@ -167,7 +166,7 @@ export function SaberSwap({}: StepProps) {
       !sourceTokenAccount ||
       !fromTokenState.selectedTokenInfo ||
       !swap ||
-      !estimatedAmountOut ||
+      !estimate ||
       !amount ||
       !stableSwap
     ) {
@@ -191,7 +190,7 @@ export function SaberSwap({}: StepProps) {
     const fromToken = new Token(fromTokenState.selectedTokenInfo);
     const fromAmount = TokenAmount.parse(fromToken, amount);
     const amountIn: u64 = fromAmount.toU64();
-    const minimumAmountOut = estimatedAmountOut.toU64();
+    const minimumAmountOut = estimate.outputAmount.toU64();
     const swapArg = {
       userAuthority,
       userSource,
@@ -215,7 +214,7 @@ export function SaberSwap({}: StepProps) {
   }, [
     amount,
     destTokenAccount,
-    estimatedAmountOut,
+    estimate,
     fromTokenState.selectedTokenInfo,
     sourceTokenAccount,
     stableSwap,
