@@ -26,6 +26,7 @@ import {
   loadExchangeInfo,
   calculateEstimatedSwapOutputAmount,
   calculateSwapPrice,
+  IExchangeInfo,
 } from "@saberhq/stableswap-sdk";
 import { TokenAmount, Token, TokenInfo } from "@saberhq/token-utils";
 import {
@@ -65,6 +66,7 @@ export function SaberSwap({}: StepProps) {
   const [amount, setAmount] = useState<string>();
   const [estimatedAmountOut, setEstimatedAmountOut] = useState<TokenAmount>();
   const [stableSwap, setStableSwap] = useState<StableSwap>();
+  const [exchangeInfo, setExchangeInfo] = useState<IExchangeInfo>();
 
   const onChangeSetAmount = useCallback((event) => {
     setAmount(event.target.value);
@@ -121,36 +123,12 @@ export function SaberSwap({}: StepProps) {
       }
       setStableSwap(s);
 
-      // Run estimation
-      if (
-        !wallet.publicKey ||
-        !sourceTokenAccount ||
-        !fromTokenState.selectedTokenInfo ||
-        !amount
-      ) {
+      // TODO: Note we may want to do this again later / refresh this later at some interval
+      const newExchangeInfo = await loadExchangeInfo(connection, exchange, s);
+      if (canceled) {
         return;
       }
-      console.log("StableSwap ready", s);
-
-      const fromToken = new Token(fromTokenState.selectedTokenInfo);
-      const fromAmount = TokenAmount.parse(fromToken, amount);
-      const amountIn: u64 = fromAmount.toU64();
-
-      console.log("sourceTokenAccount", sourceTokenAccount);
-      console.log("destTokenAccount", destTokenAccount);
-      console.log("amountIn", amountIn);
-
-      const exchangeInfo = await loadExchangeInfo(connection, exchange, s);
-      const swapPrice = calculateSwapPrice(exchangeInfo);
-      console.log(swapPrice);
-
-      const estimate = calculateEstimatedSwapOutputAmount(
-        exchangeInfo,
-        fromAmount
-      );
-      setEstimatedAmountOut(estimate.outputAmount);
-
-      console.log(estimate);
+      setExchangeInfo(newExchangeInfo);
     });
 
     return () => {
@@ -163,7 +141,25 @@ export function SaberSwap({}: StepProps) {
     fromTokenState.selectedTokenInfo,
     swap,
     amount,
+    toTokenState.selectedTokenInfo,
   ]);
+
+  const estimate = useMemo(() => {
+    // Run estimation
+    if (!fromTokenState.selectedTokenInfo || !amount || !exchangeInfo) {
+      return;
+    }
+    const fromToken = new Token(fromTokenState.selectedTokenInfo);
+    const fromAmount = TokenAmount.parse(fromToken, amount);
+    const swapPrice = calculateSwapPrice(exchangeInfo);
+    console.log(swapPrice);
+
+    const estimate = calculateEstimatedSwapOutputAmount(
+      exchangeInfo,
+      fromAmount
+    );
+    return estimate;
+  }, [amount, exchangeInfo, fromTokenState.selectedTokenInfo]);
 
   const onClickSwap = useCallback(async () => {
     if (
@@ -235,7 +231,7 @@ export function SaberSwap({}: StepProps) {
       onChangeSetAmount={onChangeSetAmount}
       onClickSwap={onClickSwap}
       amount={amount || ""}
-      estimatedAmountOut={estimatedAmountOut?.asNumber || ""}
+      estimatedAmountOut={estimate?.outputAmount?.asNumber || ""}
       isExecuting={false}
     ></SaberSwapRender>
   );
