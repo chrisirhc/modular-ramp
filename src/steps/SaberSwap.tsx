@@ -6,6 +6,7 @@ import React, {
   useCallback,
   useMemo,
   FC,
+  MouseEventHandler,
 } from "react";
 import {
   Button,
@@ -59,7 +60,8 @@ export function SaberSwap({}: StepProps) {
     targetAsset: toTokenState.selectedTokenInfo?.address,
   });
   const [amount, setAmount] = useState<string>();
-  const [estimatedAmountOut, setEstimatedAmountOut] = useState<string>();
+  const [estimatedAmountOut, setEstimatedAmountOut] = useState<TokenAmount>();
+  const [stableSwap, setStableSwap] = useState<StableSwap>();
 
   const onChangeSetAmount = useCallback((event) => {
     setAmount(event.target.value);
@@ -113,7 +115,9 @@ export function SaberSwap({}: StepProps) {
       if (canceled) {
         return;
       }
+      setStableSwap(s);
 
+      // Run estimation
       if (
         !wallet.publicKey ||
         !sourceTokenAccount ||
@@ -123,18 +127,6 @@ export function SaberSwap({}: StepProps) {
         return;
       }
       console.log("StableSwap ready", s);
-
-      const userAuthority = wallet.publicKey;
-      const userDestination = destTokenAccount;
-      if (!userAuthority || !userDestination) {
-        return;
-      }
-      // Source token account "USDC"
-      const userSource = new PublicKey(sourceTokenAccount);
-
-      // May not be right
-      const poolSource = new PublicKey(swap.underlyingTokens[0]);
-      const poolDestination = new PublicKey(swap.underlyingTokens[1]);
 
       const fromToken = new Token(fromTokenState.selectedTokenInfo);
       const fromAmount = TokenAmount.parse(fromToken, amount);
@@ -152,31 +144,9 @@ export function SaberSwap({}: StepProps) {
         exchangeInfo,
         fromAmount
       );
-      setEstimatedAmountOut(estimate.outputAmount.toString());
+      setEstimatedAmountOut(estimate.outputAmount);
 
       console.log(estimate);
-      const minimumAmountOut = estimate.outputAmount.toU64();
-      const swapArg = {
-        userAuthority,
-        userSource,
-        userDestination,
-        poolSource,
-        poolDestination,
-        amountIn,
-        minimumAmountOut,
-      };
-
-      console.log(swapArg);
-      const instruction = s.swap(swapArg);
-      const { blockhash } = await connection.getRecentBlockhash();
-      const t = new Transaction({
-        recentBlockhash: blockhash,
-        feePayer: wallet.publicKey,
-      });
-      t.add(instruction);
-
-      // Trigger this later
-      // signSendAndConfirm(wallet, connection, t);
     });
 
     return () => {
@@ -191,14 +161,77 @@ export function SaberSwap({}: StepProps) {
     amount,
   ]);
 
+  const onClickSwap = useCallback(async () => {
+    if (
+      !wallet.publicKey ||
+      !sourceTokenAccount ||
+      !fromTokenState.selectedTokenInfo ||
+      !swap ||
+      !estimatedAmountOut ||
+      !amount ||
+      !stableSwap
+    ) {
+      return;
+    }
+    const connection = getConnection(networkType);
+
+    // Source token account "USDC"
+    const userSource = new PublicKey(sourceTokenAccount);
+
+    // May not be right
+    const poolSource = new PublicKey(swap.underlyingTokens[0]);
+    const poolDestination = new PublicKey(swap.underlyingTokens[1]);
+
+    const userAuthority = wallet.publicKey;
+    const userDestination = destTokenAccount;
+    if (!userAuthority || !userDestination) {
+      return;
+    }
+
+    const fromToken = new Token(fromTokenState.selectedTokenInfo);
+    const fromAmount = TokenAmount.parse(fromToken, amount);
+    const amountIn: u64 = fromAmount.toU64();
+    const minimumAmountOut = estimatedAmountOut.toU64();
+    const swapArg = {
+      userAuthority,
+      userSource,
+      userDestination,
+      poolSource,
+      poolDestination,
+      amountIn,
+      minimumAmountOut,
+    };
+
+    console.log(swapArg);
+    const instruction = stableSwap.swap(swapArg);
+    const { blockhash } = await connection.getRecentBlockhash();
+    const t = new Transaction({
+      recentBlockhash: blockhash,
+      feePayer: wallet.publicKey,
+    });
+    t.add(instruction);
+
+    signSendAndConfirm(wallet, connection, t);
+  }, [
+    amount,
+    destTokenAccount,
+    estimatedAmountOut,
+    fromTokenState.selectedTokenInfo,
+    sourceTokenAccount,
+    stableSwap,
+    swap,
+    wallet,
+  ]);
+
   // Make sure the token account is created. Otherwise, the transaction will fail.
   return (
     <SaberSwapRender
       fromTokenState={fromTokenState}
       toTokenState={toTokenState}
       onChangeSetAmount={onChangeSetAmount}
+      onClickSwap={onClickSwap}
       amount={amount || ""}
-      estimatedAmountOut={estimatedAmountOut || ""}
+      estimatedAmountOut={estimatedAmountOut?.toString() || ""}
       isExecuting={false}
     ></SaberSwapRender>
   );
@@ -258,6 +291,7 @@ export interface SaberSwapRenderProps {
   fromTokenState: TokenInfoSelectState;
   toTokenState: TokenInfoSelectState;
   onChangeSetAmount: ChangeEventHandler;
+  onClickSwap: MouseEventHandler;
   isExecuting: boolean;
   amount: string;
   estimatedAmountOut: string;
@@ -269,6 +303,7 @@ export function SaberSwapRender({
   fromTokenState,
   toTokenState,
   onChangeSetAmount,
+  onClickSwap,
   amount,
   estimatedAmountOut,
   isExecuting,
@@ -331,7 +366,7 @@ export function SaberSwapRender({
       </HStack>
       <HStack>
         <Button>Create Token Account</Button>
-        <Button>Swap</Button>
+        <Button onClick={onClickSwap}>Swap</Button>
       </HStack>
       {/* <ApproveButton amount={amount} ethereumContext={ethereumContext} />
       {progress ? <Spinner /> : null}
