@@ -6,6 +6,7 @@ import {
   NETWORK_TYPES,
   NETWORK_TYPE_OPTIONS,
 } from "./constants";
+import { NetworkTypeContext } from "./wallet/NetworkTypeContext";
 import {
   MetamaskWalletConnector,
   EthereumContext,
@@ -80,81 +81,85 @@ export function WalletConnector({ children }: Props) {
     useEthWalletProvider();
 
   return (
-    <SolanaWalletProvider>
-      <Box>
-        <Box
-          p={4}
-          shadow="md"
-          borderWidth="1px"
-          borderRadius="md"
-          m={5}
-          position="relative"
-        >
+    <NetworkTypeContext.Provider value={networkType}>
+      <SolanaWalletProvider>
+        <Box>
           <Box
+            p={4}
+            shadow="md"
+            borderWidth="1px"
+            borderRadius="md"
+            m={5}
             position="relative"
-            width="100px"
-            marginLeft="auto"
-            marginRight="0"
           >
-            <Select
-              size="xs"
-              variant="flushed"
-              mb={2}
-              value={networkType}
-              onChange={(e) => setNetworkType(e.target.value as NetworkType)}
-              borderColor={networkType === "mainnet" ? "red.500" : undefined}
-              bg={networkType === "mainnet" ? "red.500" : "transparent"}
+            <Box
+              position="relative"
+              width="100px"
+              marginLeft="auto"
+              marginRight="0"
             >
-              {NETWORK_TYPE_OPTIONS.map((networkType) => (
-                <option key={networkType} value={networkType}>
-                  {NETWORK_TYPES[networkType]}
-                </option>
-              ))}
-            </Select>
-          </Box>
-          <Wrap justify="space-evenly">
-            <WrapItem>
               <Select
+                size="xs"
+                variant="flushed"
                 mb={2}
-                value={walletOptionKey}
-                onChange={(e) =>
-                  setWalletOptionKey(
-                    e.target.value as keyof typeof ETH_WALLET_PROVIDERS
-                  )
-                }
+                value={networkType}
+                onChange={(e) => setNetworkType(e.target.value as NetworkType)}
                 borderColor={networkType === "mainnet" ? "red.500" : undefined}
                 bg={networkType === "mainnet" ? "red.500" : "transparent"}
               >
-                {ETH_WALLET_PROVIDER_OPTIONS.map((option) => (
-                  <option key={option.key} value={option.key}>
-                    {option.name}
+                {NETWORK_TYPE_OPTIONS.map((networkType) => (
+                  <option key={networkType} value={networkType}>
+                    {NETWORK_TYPES[networkType]}
                   </option>
                 ))}
               </Select>
-              <EthWalletProvider
-                networkType={networkType}
-                onChange={setEthereumContext}
-              />
-            </WrapItem>
-            <WrapItem>
-              <TerraWalletConnector
-                networkType={networkType}
-                onChange={setTerraContext}
-              />
-            </WrapItem>
-            <WrapItem>
-              <SolanaWalletKey />
-            </WrapItem>
-          </Wrap>
+            </Box>
+            <Wrap justify="space-evenly">
+              <WrapItem>
+                <Select
+                  mb={2}
+                  value={walletOptionKey}
+                  onChange={(e) =>
+                    setWalletOptionKey(
+                      e.target.value as keyof typeof ETH_WALLET_PROVIDERS
+                    )
+                  }
+                  borderColor={
+                    networkType === "mainnet" ? "red.500" : undefined
+                  }
+                  bg={networkType === "mainnet" ? "red.500" : "transparent"}
+                >
+                  {ETH_WALLET_PROVIDER_OPTIONS.map((option) => (
+                    <option key={option.key} value={option.key}>
+                      {option.name}
+                    </option>
+                  ))}
+                </Select>
+                <EthWalletProvider
+                  networkType={networkType}
+                  onChange={setEthereumContext}
+                />
+              </WrapItem>
+              <WrapItem>
+                <TerraWalletConnector
+                  networkType={networkType}
+                  onChange={setTerraContext}
+                />
+              </WrapItem>
+              <WrapItem>
+                <SolanaWalletKey />
+              </WrapItem>
+            </Wrap>
+          </Box>
+          <Box>
+            <TerraContext.Provider value={terraContext}>
+              <EthereumContext.Provider value={ethereumContext}>
+                {children}
+              </EthereumContext.Provider>
+            </TerraContext.Provider>
+          </Box>
         </Box>
-        <Box>
-          <TerraContext.Provider value={terraContext}>
-            <EthereumContext.Provider value={ethereumContext}>
-              {children}
-            </EthereumContext.Provider>
-          </TerraContext.Provider>
-        </Box>
-      </Box>
-    </SolanaWalletProvider>
+      </SolanaWalletProvider>
+    </NetworkTypeContext.Provider>
   );
 }
