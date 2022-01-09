@@ -203,6 +203,7 @@ export function SaberSwap({}: StepProps) {
       poolSource,
       poolDestination,
       amountIn,
+      // TODO: Check whether the calculation of the minimumAmount out is correct
       minimumAmountOut,
     };
 
