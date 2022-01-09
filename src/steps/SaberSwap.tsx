@@ -36,21 +36,19 @@ import {
   signSendAndConfirm,
 } from "../operations/solana";
 import { useSolanaWallet } from "../wallet/SolanaWalletProvider";
+import { useNetworkType } from "../wallet/NetworkTypeContext";
 import { PublicKey, Transaction } from "@solana/web3.js";
 import { NetworkType } from "../constants";
-import {
-  mainnetSwapList as swapList,
-  mainnetTokenList as tokenList,
-} from "../operations/saber";
+import { SWAP_LIST, TOKEN_LIST } from "../operations/saber";
 import { u64 } from "@solana/spl-token";
 
 SaberSwap.stepTitle = "SaberSwap";
 
 export function SaberSwap({}: StepProps) {
-  const networkType: NetworkType = "mainnet";
+  const networkType = useNetworkType();
   const wallet = useSolanaWallet();
-  const fromTokenState = useTokenInfoSelectState();
-  const toTokenState = useTokenInfoSelectState();
+  const fromTokenState = useTokenInfoSelectState(networkType);
+  const toTokenState = useTokenInfoSelectState(networkType);
   const sourceTokenAccount = useTokenAccount({
     networkType,
     targetAsset: fromTokenState.selectedTokenInfo?.address,
@@ -78,13 +76,17 @@ export function SaberSwap({}: StepProps) {
     // Find the matching based on from and to token
     const tokenA = fromTokenState.selectedTokenInfo.address;
     const tokenB = toTokenState.selectedTokenInfo.address;
-    const swapCandidate = swapList.find(
+    const swapCandidate = SWAP_LIST[networkType].find(
       ({ underlyingTokens }) =>
         (underlyingTokens[0] === tokenA && underlyingTokens[1] === tokenB) ||
         (underlyingTokens[1] === tokenA && underlyingTokens[0] === tokenB)
     );
     return swapCandidate;
-  }, [fromTokenState, toTokenState]);
+  }, [
+    fromTokenState.selectedTokenInfo,
+    networkType,
+    toTokenState.selectedTokenInfo,
+  ]);
 
   console.log("Swap find", swap);
 
@@ -141,6 +143,7 @@ export function SaberSwap({}: StepProps) {
     swap,
     amount,
     toTokenState.selectedTokenInfo,
+    networkType,
   ]);
 
   const estimate = useMemo(() => {
@@ -222,6 +225,7 @@ export function SaberSwap({}: StepProps) {
     destTokenAccount,
     estimate,
     fromTokenState.selectedTokenInfo,
+    networkType,
     sourceTokenAccount,
     stableSwap,
     swap,
@@ -248,18 +252,20 @@ interface TokenInfoSelectState {
   tokenInfoOptions: TokenInfo[];
 }
 
-export function useTokenInfoSelectState(): TokenInfoSelectState {
+export function useTokenInfoSelectState(
+  networkType: NetworkType
+): TokenInfoSelectState {
   const [selectedTokenInfo, setSelectedTokenInfo] = useState<TokenInfo>();
-  const tokenInfoOptions = tokenList;
+  const tokenInfoOptions = TOKEN_LIST[networkType];
   const onChangeSelect: ChangeEventHandler<HTMLSelectElement> = useCallback(
     (event) => {
       const addressToFind = event.target.value;
-      const tokenInfo = tokenList.find(
+      const tokenInfo = tokenInfoOptions.find(
         ({ address }) => address === addressToFind
       );
       setSelectedTokenInfo(tokenInfo);
     },
-    []
+    [tokenInfoOptions]
   );
 
   return useMemo(

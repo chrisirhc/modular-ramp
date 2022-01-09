@@ -2,13 +2,8 @@ import React, { useState } from "react";
 import { Story, Meta } from "@storybook/react";
 import { WalletConnector } from "../WalletConnector";
 import { StepProps } from "../types";
-import {
-  SaberSwap,
-  SaberSwapRender,
-  SaberSwapRenderProps,
-  useTokenInfoSelect,
-} from "./SaberSwap";
-import { tokenList } from "../operations/saber";
+import { SaberSwap, SaberSwapRender, SaberSwapRenderProps } from "./SaberSwap";
+import { TOKEN_LIST } from "../operations/saber";
 import { ChakraProvider } from "@chakra-ui/react";
 
 export default {
@@ -47,6 +42,7 @@ const RenderTemplate: Story<SaberSwapRenderProps> = (args, { argTypes }) => {
   );
 };
 
+const tokenList = TOKEN_LIST.testnet;
 export const Render = RenderTemplate.bind({});
 Render.args = {
   fromTokenState: {
