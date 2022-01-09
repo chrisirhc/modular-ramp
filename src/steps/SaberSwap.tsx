@@ -98,6 +98,8 @@ export function SaberSwap({}: StepProps) {
       !toTokenState.selectedTokenInfo ||
       !swap
     ) {
+      setStableSwap(undefined);
+      setExchangeInfo(undefined);
       return;
     }
     const connection = getConnection(networkType);
@@ -357,7 +359,7 @@ export function SaberSwapRender({
           <FormLabel>To Amount</FormLabel>
           <InputGroup>
             <Input
-              placeholder="Enter amount"
+              placeholder="-"
               type="number"
               pr="4.5rem"
               min="0"
