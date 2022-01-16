@@ -311,7 +311,15 @@ function useExecuteTx(
           setStatus,
           setProgress,
           setSignedVAAHex
-        );
+        ).catch((e) => {
+          console.error(e);
+          if (txRef.current !== estTx) {
+            return;
+          }
+          txRef.current = undefined;
+          setStatus("");
+          setProgress("");
+        });
         return;
     }
   }, [status, estTx, terraContext, ethereumContext]);
