@@ -248,7 +248,9 @@ function useForeignAsset({
   return foreignAsset;
 }
 
-function useExecuteTx(isToExecute: boolean, estTx: EstTx | undefined) {
+function useExecuteTx(
+  estTx: EstTx | undefined
+): [() => void, string, string, string] {
   const terraContext = useContext(TerraContext);
   const ethereumContext = useContext(EthereumContext);
   const [status, setStatus] = useState<string>("");
@@ -257,10 +259,7 @@ function useExecuteTx(isToExecute: boolean, estTx: EstTx | undefined) {
   const [signedVAAHex, setSignedVAAHex] = useState<string>("");
   const txRef = useRef<EstTx>();
 
-  useEffect(() => {
-    if (!isToExecute) {
-      return;
-    }
+  const execute = useCallback(() => {
     // No transaction estimate yet
     if (!estTx) {
       return;
@@ -278,8 +277,8 @@ function useExecuteTx(isToExecute: boolean, estTx: EstTx | undefined) {
       );
       return;
     }
-    const { networkType, signer } = ethereumContext;
-    if (!networkType || !signer) {
+    const { networkType } = ethereumContext;
+    if (!networkType) {
       return;
     }
 
@@ -290,6 +289,10 @@ function useExecuteTx(isToExecute: boolean, estTx: EstTx | undefined) {
     switch (estTx.sourceChain.key) {
       case CHAIN_ID_ETH:
       case CHAIN_ID_POLYGON:
+        const { signer } = ethereumContext;
+        if (!signer) {
+          return;
+        }
         transferEth(
           estTx,
           networkType,
@@ -311,9 +314,9 @@ function useExecuteTx(isToExecute: boolean, estTx: EstTx | undefined) {
         );
         return;
     }
-  }, [isToExecute, status, estTx, terraContext, ethereumContext]);
+  }, [status, estTx, terraContext, ethereumContext]);
 
-  return [status, progress, signedVAAHex];
+  return [execute, status, progress, signedVAAHex];
 }
 
 async function transferTerra(
@@ -713,7 +716,7 @@ export function WormholeBridge({
     sourceChain: sourceChainPickerState.selectedChainOption,
     destChain: destChainPickerState.selectedChainOption,
   });
-  const [status, progress, signedVAAHex] = useExecuteTx(isToExecute, estTx);
+  const [execute, status, progress, signedVAAHex] = useExecuteTx(estTx);
   const createTokenAccount = useCreateTokenAccount({
     networkType,
     targetAsset: foreignAsset?.mintAddress,
@@ -753,6 +756,7 @@ export function WormholeBridge({
       onAttest={onAttest}
       onApproveAmount={onApproveAmount}
       onCreateTokenAccount={createTokenAccount}
+      onTransferAmount={execute}
       onAmountChanged={(event) => setAmount(event.target.value)}
       onRedeem={onRedeem}
       progress={progress}
@@ -784,6 +788,7 @@ export interface TerraToEthStepRenderProps {
 
   onApproveAmount: (() => Promise<ContractReceipt>) | (() => void);
   onCreateTokenAccount: () => void;
+  onTransferAmount: () => void;
   onAmountChanged: ChangeEventHandler<HTMLInputElement>;
   onRedeem: () => void;
   progress: string;
@@ -801,6 +806,7 @@ export function WormholeBridgeRender({
   onChangeToken,
   onApproveAmount,
   onCreateTokenAccount,
+  onTransferAmount,
   onAmountChanged,
   onRedeem,
   progress,
@@ -893,6 +899,7 @@ export function WormholeBridgeRender({
       <HStack>
         <Button onClick={onCreateTokenAccount}>Create Token Account</Button>
         <Button onClick={onApproveAmount}>Approve Amount</Button>
+        <Button onClick={onTransferAmount}>Transfer Amount</Button>
         <Button onClick={onRedeem}>Redeem</Button>
       </HStack>
       {progress || status ? (
